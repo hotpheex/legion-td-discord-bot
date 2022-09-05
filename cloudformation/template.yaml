@@ -1,0 +1,82 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Outputs:
+  ApiGatewayInvokeUrl:
+    Value: !Sub 'https://${RestApiGateway}.execute-api.${AWS::Region}.amazonaws.com/stage'
+Resources:
+  ApiGatewayDeployment:
+    DependsOn:
+      - eventPOSTMethod
+    Properties:
+      RestApiId: !Ref 'RestApiGateway'
+      StageName: stage
+    Type: AWS::ApiGateway::Deployment
+  LegionTdDiscordBotLambdaExecutionRole:
+    Properties:
+      AssumeRolePolicyDocument:
+        Statement:
+          - Action:
+              - sts:AssumeRole
+            Effect: Allow
+            Principal:
+              Service:
+                - lambda.amazonaws.com
+      Path: /
+      Policies:
+        - PolicyDocument:
+            Statement:
+              - Action:
+                  - logs:CreateLogGroup
+                  - logs:CreateLogStream
+                  - logs:PutLogEvents
+                Effect: Allow
+                Resource:
+                  - '*'
+          PolicyName: logToCloudwatch
+    Type: AWS::IAM::Role
+  LegionTdDiscordBotLambdaFunction:
+    Properties:
+      Code:
+        S3Bucket: s3-buckets-lambdalayerbucket-1wvx0gjtmchjj
+        S3Key: legion-td-discord-bot/archive.zip
+      Description: legion-td-discord-bot Function
+      Environment:
+        Variables:
+          DISCORD_PUBLIC_KEY: 42be1d3d4136ed14b3a46a60bb11fe92c73c0d84be9337f3e6f11e21edf6e75d
+      Handler: lambda_function.lambda_handler
+      Role: !GetAtt 'LegionTdDiscordBotLambdaExecutionRole.Arn'
+      Runtime: python3.9
+    Type: AWS::Lambda::Function
+  RestApiGateway:
+    Properties:
+      Description: !Sub '${AWS::StackName}-rest-api'
+      EndpointConfiguration:
+        Types:
+          - REGIONAL
+      Name: !Sub '${AWS::StackName}-rest-api'
+    Type: AWS::ApiGateway::RestApi
+  eventApiResource:
+    Properties:
+      ParentId: !GetAtt 'RestApiGateway.RootResourceId'
+      PathPart: event
+      RestApiId: !Ref 'RestApiGateway'
+    Type: AWS::ApiGateway::Resource
+  eventPOSTMethod:
+    Properties:
+      AuthorizationType: NONE
+      HttpMethod: POST
+      Integration:
+        IntegrationHttpMethod: POST
+        Type: AWS_PROXY
+        Uri: !Sub
+          - arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${lambdaArn}/invocations
+          - lambdaArn: !GetAtt 'LegionTdDiscordBotLambdaFunction.Arn'
+      ResourceId: !GetAtt 'eventApiResource.ResourceId'
+      RestApiId: !Ref 'RestApiGateway'
+    Type: AWS::ApiGateway::Method
+  eventPOSTMethodPermission:
+    Properties:
+      Action: lambda:InvokeFunction
+      FunctionName: !GetAtt 'LegionTdDiscordBotLambdaFunction.Arn'
+      Principal: apigateway.amazonaws.com
+      SourceArn: !Sub 'arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${RestApiGateway}/*/POST/event'
+    Type: AWS::Lambda::Permission

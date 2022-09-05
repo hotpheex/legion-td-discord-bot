@@ -1,2 +1,1 @@
-# ltd-discord-bot
-Legion TD Tournament Discord Bot
+# Legion TD Tournament Discord Bot

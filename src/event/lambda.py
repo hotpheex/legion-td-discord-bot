@@ -5,9 +5,20 @@ from re import sub
 
 from nacl.signing import VerifyKey
 from nacl.exceptions import BadSignatureError
+import gspread
 
 DISCORD_PUBLIC_KEY = os.environ["DISCORD_PUBLIC_KEY"]
 DISCORD_PING_PONG = {"statusCode": 200, "body": json.dumps({"type": 1})}
+
+TEAM_COLUMN = 3
+CHECKED_IN_COLOR = {
+    "red": 0.203,
+    "green": 0.658,
+    "blue": 0.325,
+}
+CHECKED_IN_MSG = "Checked In"
+CHANNEL_IDS = {"1016217034662629537": "Division 4"}
+SHEET_ID = "1AwWaWBdKxYCSj6LLVZrsfI_zdo0gAqduvng_DkxmeE8"
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger()
@@ -24,7 +35,37 @@ logger = logging.getLogger()
 
 def checkin(guild_id, body):
     team_name = body["data"]["options"][0]["value"]
-    return f"{team_name} Checked In! :white_check_mark:"
+    player_name = body["member"]["nick"]
+    if not player_name:
+        player_name = body["member"]["user"]["username"]
+    channel_id = body["channel_id"]
+
+    gc = gspread.service_account(filename="svc_account.json")
+    sh = gc.open_by_key(SHEET_ID)
+    ws = sh.worksheet(CHANNEL_IDS[channel_id])
+
+    # Find Team
+    team_cell = ws.find(query=team_name, in_column=TEAM_COLUMN)
+
+    if not team_cell:
+        return f"Team '{team_name}' not found in {CHANNEL_IDS[channel_id]}"
+
+    if not ws.find(query=player_name, in_row=team_cell.row):
+        return f"Player '{player_name}' is not on team '{team_name}'"
+
+    status_cell = ws.cell(team_cell.row, team_cell.col - 1)
+
+    if status_cell.value == CHECKED_IN_MSG:
+        return f"Team '{team_name}' is already checked in"
+
+    # Mark team as checked in
+    ws.update_cell(team_cell.row, team_cell.col - 1, CHECKED_IN_MSG)
+    ws.format(
+        f"{status_cell.address}:{team_cell.address}",
+        {"backgroundColor": CHECKED_IN_COLOR},
+    )
+
+    return f"Team '{team_name}' checked in! :white_check_mark:"
 
 
 commands = {"checkin": checkin}

@@ -3,6 +3,7 @@ import sys
 from tempfile import TemporaryDirectory
 from shutil import make_archive
 from venv import create
+from hashlib import sha512
 
 from awacs.aws import Allow, PolicyDocument, Principal, Statement
 import awacs.sts as asts
@@ -26,7 +27,7 @@ from botocore.exceptions import ClientError
 
 
 def create_upload_deployment_archive(
-    lambda_requirements, lambda_code, s3_layer_bucket, lambda_name
+    lambda_requirements, lambda_code, lambda_code_hash, s3_layer_bucket, lambda_name
 ):
     with TemporaryDirectory() as tmpdir:
         for dependency in lambda_requirements:
@@ -50,11 +51,13 @@ def create_upload_deployment_archive(
         s3_client = boto3.client("s3")
         try:
             response = s3_client.upload_file(
-                f"{tmpdir}/archive.zip", s3_layer_bucket, f"{lambda_name}/archive.zip"
+                f"{tmpdir}/archive.zip",
+                s3_layer_bucket,
+                f"{lambda_name}/archive-{lambda_code_hash}.zip",
             )
         except ClientError as e:
             raise SystemExit(e)
-        print("Lambda Archive Uploaded...")
+        print(f"{lambda_name}/archive-{lambda_code_hash}.zip Uploaded...")
     return True
 
 
@@ -67,12 +70,50 @@ def add(
     lambda_handler,
     lambda_runtime,
     lambda_vars={},
+    iam_permissions=[],
 ):
+    lambda_code_hash = sha512(lambda_code.encode("utf-8")).hexdigest()[:10]
+
     create_upload_deployment_archive(
-        lambda_requirements, lambda_code, s3_layer_bucket, lambda_name
+        lambda_requirements, lambda_code, lambda_code_hash, s3_layer_bucket, lambda_name
     )
 
     cfn_name = lambda_name.replace("-", " ").title().replace(" ", "")
+
+    iam_statements = []
+
+    iam_permissions.append(
+        {
+            "name": "log-to-cloudwatch",
+            "resources": [
+                "*"
+                # Sub(
+                #     f"arn:aws:logs:${{AWS::Region}}:${{AWS::AccountId}}:log-group:/aws/lambda/{lambda_name}*"
+                # )
+            ],
+            "actions": [
+                alog.CreateLogGroup,
+                alog.CreateLogStream,
+                alog.PutLogEvents,
+            ],
+        }
+    )
+
+    for statement in iam_permissions:
+        iam_statements.append(
+            iam.Policy(
+                PolicyName=f"{lambda_name}-{statement['name']}",
+                PolicyDocument=PolicyDocument(
+                    Statement=[
+                        Statement(
+                            Effect=Allow,
+                            Resource=statement["resources"],
+                            Action=statement["actions"],
+                        )
+                    ]
+                ),
+            )
+        )
 
     iam_lambda_execution_role = template.add_resource(
         iam.Role(
@@ -87,29 +128,7 @@ def add(
                 ]
             ),
             Path="/",
-            Policies=[
-                iam.Policy(
-                    PolicyName="logToCloudwatch",
-                    PolicyDocument=PolicyDocument(
-                        Statement=[
-                            Statement(
-                                Effect=Allow,
-                                # Resource=[
-                                #     Sub(
-                                #         f"arn:aws:logs:${{AWS::Region}}:${{AWS::AccountId}}:log-group:/aws/lambda/{lambda_name}:*"
-                                #     )
-                                # ],
-                                Resource=["*"],
-                                Action=[
-                                    alog.CreateLogGroup,
-                                    alog.CreateLogStream,
-                                    alog.PutLogEvents,
-                                ],
-                            )
-                        ]
-                    ),
-                ),
-            ],
+            Policies=iam_statements,
         )
     )
 
@@ -131,11 +150,11 @@ def add(
             # FunctionName=lambda_name,
             Code=lmd.Code(
                 S3Bucket=s3_layer_bucket,
-                S3Key=f"{lambda_name}/archive.zip",
+                S3Key=f"{lambda_name}/archive-{lambda_code_hash}.zip",
             ),
             Description=f"{lambda_name} Function",
             Environment=lmd.Environment(Variables=lambda_vars),
-            Handler=lambda_handler,
+            Handler=f"lambda_function.{lambda_handler}",
             Role=GetAtt(iam_lambda_execution_role, "Arn"),
             Runtime=lambda_runtime,
             # Layers=[Ref(lambda_layer)],

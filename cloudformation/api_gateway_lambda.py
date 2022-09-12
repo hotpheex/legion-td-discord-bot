@@ -4,16 +4,9 @@
 # import awacs.logs as alogs
 # import awacs.elasticfilesystem as aefs
 
-from troposphere import Ref, Tags, Sub, ImportValue, GetAtt, Output
+from troposphere import Ref, Sub, GetAtt, Output
 import troposphere.apigateway as agw
 import troposphere.awslambda as lmb
-import troposphere.iam as iam
-import troposphere.ecs as ecs
-import troposphere.elasticloadbalancingv2 as alb
-import troposphere.route53 as r53
-import troposphere.efs as efs
-import troposphere.ec2 as ec2
-import troposphere.logs as logs
 
 
 def add(

@@ -14,19 +14,19 @@ from nacl.exceptions import BadSignatureError
 import boto3
 import botocore.exceptions
 
-logging.getLogger().setLevel(logging.DEBUG)
+logging.getLogger().setLevel(logging.INFO)
 
 DISCORD_PUBLIC_KEY = os.environ["DISCORD_PUBLIC_KEY"]
 DISCORD_PING_PONG = {"statusCode": 200, "body": json.dumps({"type": 1})}
 
-CHECKIN_FUNCTION = os.environ["LAMBDA_CHECKIN"]
-
+LAMBDA_CHECKIN = os.environ["LAMBDA_CHECKIN"]
+LAMBDA_MANAGE = os.environ["LAMBDA_MANAGE"]
 
 # INTERACTION RESPONSE TYPES
 # https://discord.com/developers/docs/interactions/receiving-and-responding#interaction-response-object-interaction-callback-type
 
 
-commands = {"checkin": CHECKIN_FUNCTION}
+commands = {"checkin": LAMBDA_CHECKIN, "manage": LAMBDA_MANAGE}
 
 
 def discord_body(status_code, type, message):
@@ -79,10 +79,6 @@ def lambda_handler(event, context):
         )
         logging.debug(response["StatusCode"])
         return discord_body(200, 5, "processing")
-
-        # bot_func = commands.get(command)
-        # message = bot_func(guild_id, body)
-        # return discord_body(200, 4, message)
     except botocore.exceptions.ClientError as e:
         logging.error(e)
         return discord_body(200, 4, f"Unable to {command}, {e}")

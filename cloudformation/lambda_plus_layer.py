@@ -2,25 +2,15 @@ import subprocess
 import sys
 from tempfile import TemporaryDirectory
 from shutil import make_archive
-from venv import create
 from hashlib import sha512
 
 from awacs.aws import Allow, PolicyDocument, Principal, Statement
 import awacs.sts as asts
-import awacs.ssm as assm
 import awacs.logs as alog
-import awacs.elasticfilesystem as aefs
 
-from troposphere import Ref, Tags, Sub, ImportValue, GetAtt
+from troposphere import GetAtt
 import troposphere.awslambda as lmd
-import troposphere.apigateway as agw
 import troposphere.iam as iam
-import troposphere.ecs as ecs
-import troposphere.elasticloadbalancingv2 as alb
-import troposphere.route53 as r53
-import troposphere.efs as efs
-import troposphere.ec2 as ec2
-import troposphere.logs as logs
 
 import boto3
 from botocore.exceptions import ClientError
@@ -69,6 +59,7 @@ def add(
     lambda_code,
     lambda_handler,
     lambda_runtime,
+    lambda_timeout=10,
     lambda_vars={},
     iam_permissions=[],
 ):
@@ -157,6 +148,7 @@ def add(
             Handler=f"lambda_function.{lambda_handler}",
             Role=GetAtt(iam_lambda_execution_role, "Arn"),
             Runtime=lambda_runtime,
+            Timeout=lambda_timeout,
             # Layers=[Ref(lambda_layer)],
         )
     )

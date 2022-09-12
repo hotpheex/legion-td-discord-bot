@@ -4,7 +4,6 @@ Handle checkin command
 import json
 import os
 import logging
-from re import sub
 from base64 import b64decode
 
 from requests import patch
@@ -14,10 +13,11 @@ import gspread
 logging.getLogger().setLevel(logging.DEBUG)
 
 GOOGLE_API_CREDS = os.environ["GOOGLE_API_CREDS"]
+GOOGLE_SHEET_ID = os.environ["GOOGLE_SHEET_ID"]
 APPLICATION_ID = os.environ["APPLICATION_ID"]
-DISCORD_PING_PONG = {"statusCode": 200, "body": json.dumps({"type": 1})}
 
 TEAM_COLUMN = 3
+SOLO_COLUMN = 8
 CHECKED_IN_COLOR = {
     "red": 0.203,
     "green": 0.658,
@@ -25,7 +25,12 @@ CHECKED_IN_COLOR = {
 }
 CHECKED_IN_MSG = "Checked In"
 CHANNEL_IDS = {"1016217034662629537": "Division 4"}
-SHEET_ID = "1AwWaWBdKxYCSj6LLVZrsfI_zdo0gAqduvng_DkxmeE8"
+# CHANNEL_IDS = {
+#     "935116296587202632": "Division 4",
+#     "935116039400857620": "Division 3",
+#     "935116002000240680": "Division 2",
+#     "935115970945613884": "Division 1",
+# }
 
 
 def checkin(guild_id, body):
@@ -33,41 +38,53 @@ def checkin(guild_id, body):
     with open("/tmp/google_creds.json", "w") as fh:
         fh.write(b64decode(GOOGLE_API_CREDS).decode("utf-8"))
 
-    team_name = body["data"]["options"][0]["value"]
+    sub_command = body["data"]["options"][0]["name"]
     player_name = body["member"]["nick"]
     if not player_name:
         player_name = body["member"]["user"]["username"]
     channel_id = body["channel_id"]
+    if sub_command == "team":
+        team_name = body["data"]["options"][0]["options"][0]["value"]
 
-    try:
-        gc = gspread.service_account(filename="/tmp/google_creds.json")
-        sh = gc.open_by_key(SHEET_ID)
-        ws = sh.worksheet(CHANNEL_IDS[channel_id])
+    gc = gspread.service_account(filename="/tmp/google_creds.json")
+    sh = gc.open_by_key(GOOGLE_SHEET_ID)
+    ws = sh.worksheet(CHANNEL_IDS[channel_id])
 
-        # Find Team
-        team_cell = ws.find(query=team_name, in_column=TEAM_COLUMN)
+    if sub_command == "team":
+        query_name = team_name
+        query_column = TEAM_COLUMN
+    elif sub_command == "solo":
+        query_name = player_name
+        query_column = SOLO_COLUMN
+    else:
+        raise Exception(f"{sub_command} not a valid command")
 
-        if not team_cell:
-            return f"Team `{team_name}` not found in {CHANNEL_IDS[channel_id]}"
+    # Find Name Cell
+    name_cell = ws.find(query=query_name, case_sensitive=False, in_column=query_column)
+    if not name_cell:
+        return f":no_entry: `{query_name}` not found in {CHANNEL_IDS[channel_id]}"
 
-        if not ws.find(query=player_name, in_row=team_cell.row):
-            return f"Player `{player_name}` is not on team `{team_name}`"
+    if sub_command == "team":
+        if not ws.find(query=player_name, case_sensitive=False, in_row=name_cell.row):
+            return f":no_entry: Player `{player_name}` is not on team `{team_name}`"
 
-        status_cell = ws.cell(team_cell.row, team_cell.col - 1)
+    if sub_command == "solo":
+        if player_name.lower() != name_cell.value.lower():
+            return f":no_entry: Your nickname isn't `{name_cell.value}`!"
 
-        if status_cell.value == CHECKED_IN_MSG:
-            return f"Team `{team_name}` is already checked in"
-    except Exception as e:
-        logging.error(e)
+    # Check if already checked in
+    status_cell = ws.cell(name_cell.row, name_cell.col - 1)
+    if status_cell.value == CHECKED_IN_MSG:
+        return f":no_entry: `{query_name}` is already checked in"
 
-    # Mark team as checked in
-    ws.update_cell(team_cell.row, team_cell.col - 1, CHECKED_IN_MSG)
+    # Mark as checked in
+    ws.update_cell(name_cell.row, name_cell.col - 1, CHECKED_IN_MSG)
     ws.format(
-        f"{status_cell.address}:{team_cell.address}",
+        f"{status_cell.address}:{name_cell.address}",
         {"backgroundColor": CHECKED_IN_COLOR},
     )
 
-    return f"Team `{team_name}` checked in! :white_check_mark:"
+    return f":white_check_mark: `{query_name}` checked in!"
 
 
 def lambda_handler(event, context):
@@ -76,17 +93,23 @@ def lambda_handler(event, context):
     guild_id = event["guild_id"]
 
     try:
-        message = checkin(guild_id, event)
-        logging.info(message)
+        if event["channel_id"] not in CHANNEL_IDS:
+            message = f":no_entry: `/checkin` not supported in this channel"
+        else:
+            message = checkin(guild_id, event)
+
+        logging.info(f"MESSAGE: {message}")
 
         response = patch(
             f"https://discord.com/api/webhooks/{APPLICATION_ID}/{event['token']}/messages/@original",
             json={"content": message},
         )
-        logging.debug(response.status_code)
+        logging.info(response.status_code)
         logging.debug(response.json())
 
     except RequestException as e:
         logging.error(e)
     except Exception as e:
         logging.error(e)
+
+    return True

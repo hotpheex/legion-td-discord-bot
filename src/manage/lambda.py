@@ -1,12 +1,11 @@
 """
 Admin commands to manage tournaments
 """
-from asyncio import current_task
 import json
-import os
 import logging
-import boto3
+import os
 
+import boto3
 from requests import patch
 from requests.exceptions import RequestException
 
@@ -33,13 +32,13 @@ def set_checkin_status(client, event):
     desired_status = event["data"]["options"][0]["options"][0]["value"]
 
     if current_status == desired_status:
-        return f"Checkins already set to {current_status}"
+        return f"Checkins already set to `{current_status}`"
     else:
         response = client.put_parameter(
             Name=CHECKIN_STATUS_PARAM, Value=str(desired_status).lower(), Overwrite=True
         )
         logging.debug(response)
-        return f"Checkins are now set to {desired_status}"
+        return f"Checkins are now set to `{desired_status}`"
 
 
 def lambda_handler(event, context):
@@ -52,9 +51,9 @@ def lambda_handler(event, context):
         if sub_command == "checkin_status":
             current_status = get_checkin_status(client)
             if current_status:
-                message = "Checkouts are currently enabled"
+                message = "Checkouts are currently `enabled`"
             else:
-                message = "Checkouts are currently disabled"
+                message = "Checkouts are currently `disabled`"
         elif sub_command == "checkin_enabled":
             message = set_checkin_status(client, event)
 

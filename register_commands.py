@@ -1,18 +1,21 @@
 ##############################################
 # Run this script locally to add bot commands
 ##############################################
-import requests
 import os
+import json
 
-# from dotenv import load_dotenv
-
-# load_dotenv()
+import requests
 
 API_ENDPOINT = "https://discord.com/api"
 
 bot_id = os.getenv("bot_id")
 bot_key = os.getenv("bot_key")
 
+# manage_roles = {
+#     "935078157244055562": "Developer",
+#     "935077876158586931": "Tournament Director",
+#     "971878714176589844": "Nova Cup Staff",
+# }
 
 commands = [
     {
@@ -64,75 +67,31 @@ commands = [
 ]
 
 
-def get_oauth_token():
-    data = {
-        "grant_type": "client_credentials",
-        "scope": "identify connections applications.commands.permissions.update",
-    }
-    headers = {"Content-Type": "application/x-www-form-urlencoded"}
-    r = requests.post(
-        f"{API_ENDPOINT}/oauth2/token",
-        data=data,
-        headers=headers,
-        auth=(bot_id, bot_key),
-    )
-    r.raise_for_status()
-    return r.json()
-
-
 headers = {"Authorization": f"Bot {bot_key}"}
 
 
 def update_commands(url):
     for cmd in commands:
         r = requests.post(url, headers=headers, json=cmd)
-        print(r.json())
+        print(r.content.decode("utf-8"))
 
 
 def get_commands(url):
     r = requests.get(url, headers=headers)
 
-    print(r.json())
+    cmds = r.json()
+    for cmd in cmds:
+        print(json.dumps(cmd))
 
 
 def delete_commands(url):
     r = requests.delete(url, headers=headers)
 
-    print(r.json())
+    print(r.content)
 
 
-# def update_permissions(url):
-
-
-def get_command_permissions(url):
-    r = requests.get(url, headers=headers)
-    print(r.status_code)
-    print(r.json())
-
-
-def put_command_permissions(url, perms):
-    r = requests.put(url, headers=headers, json=perms)
-    print(r.status_code)
-    print(r.json())
-
-
-update_commands(f"https://discord.com/api/v8/applications/{bot_id}/commands")
+# update_commands(f"https://discord.com/api/v8/applications/{bot_id}/commands")
 # get_commands(f"https://discord.com/api/v8/applications/{bot_id}/commands")
 # delete_commands(
-#     f"https://discord.com/api/v8/applications/{bot_id}/commands/795912485793431583")
-
-guild_id = "755422118719520827"
-command_id = "1018746318740537365"
-test_role = "1018757033329176709"
-
-# put_command_permissions(
-#     f"https://discord.com/api/v8/applications/{bot_id}/guilds/{guild_id}/commands/{command_id}/permissions",
-#     {
-#         # "id": command_id,
-#         "permissions": [{"id": test_role, "type": 1, "permission": True}],
-#     },
-# )
-
-# get_command_permissions(
-#     f"https://discord.com/api/v8/applications/{bot_id}/guilds/{guild_id}/commands/permissions"
+#     f"https://discord.com/api/v8/applications/{bot_id}/commands/1018746318740537365"
 # )

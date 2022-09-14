@@ -4,15 +4,15 @@ Responds with ACK & defer for update
 Invoke async function to process command
 """
 import json
-import os
 import logging
-from re import sub
+import os
 from base64 import b64decode
+from re import sub
 
-from nacl.signing import VerifyKey
-from nacl.exceptions import BadSignatureError
 import boto3
 import botocore.exceptions
+from nacl.exceptions import BadSignatureError
+from nacl.signing import VerifyKey
 
 logging.getLogger().setLevel(logging.INFO)
 

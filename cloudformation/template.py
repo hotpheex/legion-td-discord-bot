@@ -1,12 +1,11 @@
 from os import environ
 
-from troposphere import ssm
 import awacs.awslambda as almb
 import awacs.ssm as assm
+from troposphere import GetAtt, Ref, Sub, Template, ssm
 
-import api_gateway_lambda, lambda_plus_layer
-
-from troposphere import Template, Ref, Sub, GetAtt
+import api_gateway_lambda
+import lambda_plus_layer
 
 application_id = "1015271519414399038"
 s3_layer_bucket = "s3-buckets-lambdalayerbucket-1wvx0gjtmchjj"
@@ -40,7 +39,19 @@ template, checkin_function_arn = lambda_plus_layer.add(
         "APPLICATION_ID": application_id,
         "GOOGLE_API_CREDS": google_api_creds,
         "GOOGLE_SHEET_ID": google_sheet_id,
+        "CHECKIN_STATUS_PARAM": Ref(checkin_status_param),
     },
+    iam_permissions=[
+        {
+            "name": "use-checkin-status-param",
+            "resources": [
+                Sub(
+                    "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter${SsmParameterCheckinStatus}"
+                )
+            ],
+            "actions": [assm.GetParameter],
+        }
+    ],
 )
 
 template, manage_function_arn = lambda_plus_layer.add(

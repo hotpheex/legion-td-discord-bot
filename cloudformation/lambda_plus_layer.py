@@ -1,19 +1,17 @@
 import subprocess
 import sys
-from tempfile import TemporaryDirectory
-from shutil import make_archive
 from hashlib import sha512
+from shutil import make_archive
+from tempfile import TemporaryDirectory
 
-from awacs.aws import Allow, PolicyDocument, Principal, Statement
-import awacs.sts as asts
 import awacs.logs as alog
-
-from troposphere import GetAtt
+import awacs.sts as asts
+import boto3
 import troposphere.awslambda as lmd
 import troposphere.iam as iam
-
-import boto3
+from awacs.aws import Allow, PolicyDocument, Principal, Statement
 from botocore.exceptions import ClientError
+from troposphere import GetAtt
 
 
 def create_upload_deployment_archive(

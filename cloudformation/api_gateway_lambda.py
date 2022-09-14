@@ -4,9 +4,9 @@
 # import awacs.logs as alogs
 # import awacs.elasticfilesystem as aefs
 
-from troposphere import Ref, Sub, GetAtt, Output
 import troposphere.apigateway as agw
 import troposphere.awslambda as lmb
+from troposphere import GetAtt, Output, Ref, Sub
 
 
 def add(

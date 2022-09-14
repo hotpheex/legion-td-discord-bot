@@ -2,19 +2,23 @@
 Handle checkin command
 """
 import json
-import os
 import logging
+import os
 from base64 import b64decode
 
+import boto3
+import gspread
 from requests import patch
 from requests.exceptions import RequestException
-import gspread
 
-logging.getLogger().setLevel(logging.DEBUG)
+# Google SA setup: https://docs.gspread.org/en/latest/oauth2.html#for-bots-using-service-account
+
+logging.getLogger().setLevel(logging.INFO)
 
 GOOGLE_API_CREDS = os.environ["GOOGLE_API_CREDS"]
 GOOGLE_SHEET_ID = os.environ["GOOGLE_SHEET_ID"]
 APPLICATION_ID = os.environ["APPLICATION_ID"]
+CHECKIN_STATUS_PARAM = os.environ["CHECKIN_STATUS_PARAM"]
 
 TEAM_COLUMN = 3
 SOLO_COLUMN = 8
@@ -24,16 +28,30 @@ CHECKED_IN_COLOR = {
     "blue": 0.325,
 }
 CHECKED_IN_MSG = "Checked In"
-CHANNEL_IDS = {"1016217034662629537": "Division 4"}
-# CHANNEL_IDS = {
-#     "935116296587202632": "Division 4",
-#     "935116039400857620": "Division 3",
-#     "935116002000240680": "Division 2",
-#     "935115970945613884": "Division 1",
-# }
+CHANNEL_IDS = {
+    "935116296587202632": "Division 4",
+    "935116039400857620": "Division 3",
+    "935116002000240680": "Division 2",
+    "935115970945613884": "Division 1",
+}
+# Test Channel
+CHANNEL_IDS["1016217034662629537"] = "Division 4"
 
 
-def checkin(guild_id, body):
+def get_checkin_status():
+    client = boto3.client("ssm")
+    response = client.get_parameter(Name=CHECKIN_STATUS_PARAM)
+    logging.debug(response)
+
+    if response["Parameter"]["Value"] == "true":
+        return True
+    elif response["Parameter"]["Value"] == "false":
+        return False
+    else:
+        raise Exception()
+
+
+def checkin(body):
     # Drop creds file on fs
     with open("/tmp/google_creds.json", "w") as fh:
         fh.write(b64decode(GOOGLE_API_CREDS).decode("utf-8"))
@@ -90,13 +108,13 @@ def checkin(guild_id, body):
 def lambda_handler(event, context):
     logging.debug(json.dumps(event))
 
-    guild_id = event["guild_id"]
-
     try:
-        if event["channel_id"] not in CHANNEL_IDS:
+        if not get_checkin_status():
+            message = f":no_entry: Tournament checkins are not open yet"
+        elif event["channel_id"] not in CHANNEL_IDS:
             message = f":no_entry: `/checkin` not supported in this channel"
         else:
-            message = checkin(guild_id, event)
+            message = checkin(event)
 
         logging.info(f"MESSAGE: {message}")
 

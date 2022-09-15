@@ -11,7 +11,7 @@ application_id = "1015271519414399038"
 s3_layer_bucket = "s3-buckets-lambdalayerbucket-1wvx0gjtmchjj"
 lambda_name_prefix = "legion-td-discord-bot"
 google_api_creds = environ["GOOGLE_API_CREDS"]
-google_sheet_id = "1AwWaWBdKxYCSj6LLVZrsfI_zdo0gAqduvng_DkxmeE8"
+google_sheet_id = "1Mi_J_r6vRcKU4AosO0-MGa9MnYX3Df22qchAUmQZVWk"
 discord_public_key = "42be1d3d4136ed14b3a46a60bb11fe92c73c0d84be9337f3e6f11e21edf6e75d"
 
 template = Template()

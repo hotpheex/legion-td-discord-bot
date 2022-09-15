@@ -80,7 +80,7 @@ def checkin(body):
     # Find Name Cell
     name_cell = ws.find(query=query_name, case_sensitive=False, in_column=query_column)
     if not name_cell:
-        return f":no_entry: `{query_name}` not found in {CHANNEL_IDS[channel_id]}"
+        return f":no_entry: `{query_name}` not found in {CHANNEL_IDS[channel_id]}\nPlease make sure your Discord nickname matches your in game name"
 
     if sub_command == "team":
         if not ws.find(query=player_name, case_sensitive=False, in_row=name_cell.row):

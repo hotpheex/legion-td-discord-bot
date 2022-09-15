@@ -35,7 +35,7 @@ CHANNEL_IDS = {
     "935115970945613884": "Division 1",
 }
 # Test Channel
-CHANNEL_IDS["1016217034662629537"] = "Division 4"
+CHANNEL_IDS["1019583590234849320"] = "Bot Test"
 
 
 def get_checkin_status():
@@ -75,7 +75,7 @@ def checkin(body):
         query_name = player_name
         query_column = SOLO_COLUMN
     else:
-        raise Exception(f"{sub_command} not a valid command")
+        raise Exception(f"{sub_command} is not a valid command")
 
     # Find Name Cell
     name_cell = ws.find(query=query_name, case_sensitive=False, in_column=query_column)
@@ -84,11 +84,11 @@ def checkin(body):
 
     if sub_command == "team":
         if not ws.find(query=player_name, case_sensitive=False, in_row=name_cell.row):
-            return f":no_entry: Player `{player_name}` is not on team `{team_name}`"
+            return f":no_entry: Player `{player_name}` is not on team `{team_name}`\nPlease make sure your Discord nickname matches your in game name"
 
     if sub_command == "solo":
         if player_name.lower() != name_cell.value.lower():
-            return f":no_entry: Your nickname isn't `{name_cell.value}`!"
+            return f":no_entry: Your nickname isn't `{name_cell.value}`!\nPlease make sure your Discord nickname matches your in game name"
 
     # Check if already checked in
     status_cell = ws.cell(name_cell.row, name_cell.col - 1)
@@ -110,7 +110,7 @@ def lambda_handler(event, context):
 
     try:
         if not get_checkin_status():
-            message = f":no_entry: Tournament checkins are not open yet"
+            message = f":no_entry: Tournament checkins are not currently open"
         elif event["channel_id"] not in CHANNEL_IDS:
             message = f":no_entry: `/checkin` not supported in this channel"
         else:

@@ -6,8 +6,6 @@ Invoke async function to process command
 import json
 import logging
 import os
-from base64 import b64decode
-from re import sub
 
 import boto3
 import botocore.exceptions
@@ -24,7 +22,6 @@ LAMBDA_MANAGE = os.environ["LAMBDA_MANAGE"]
 
 # INTERACTION RESPONSE TYPES
 # https://discord.com/developers/docs/interactions/receiving-and-responding#interaction-response-object-interaction-callback-type
-
 
 commands = {"checkin": LAMBDA_CHECKIN, "manage": LAMBDA_MANAGE}
 

@@ -51,9 +51,9 @@ def lambda_handler(event, context):
         if sub_command == "checkin_status":
             current_status = get_checkin_status(client)
             if current_status:
-                message = "Checkouts are currently `enabled`"
+                message = "Checkins are currently `enabled`"
             else:
-                message = "Checkouts are currently `disabled`"
+                message = "Checkins are currently `disabled`"
         elif sub_command == "checkin_enabled":
             message = set_checkin_status(client, event)
 

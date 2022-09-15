@@ -1,8 +1,8 @@
 ##############################################
 # Run this script locally to add bot commands
 ##############################################
-import os
 import json
+import os
 
 import requests
 

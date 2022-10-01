@@ -9,7 +9,7 @@ import boto3
 from requests import patch
 from requests.exceptions import RequestException
 
-logging.getLogger().setLevel(logging.INFO)
+logging.getLogger().setLevel(logging.DEBUG)
 
 CHECKIN_STATUS_PARAM = os.environ["CHECKIN_STATUS_PARAM"]
 APPLICATION_ID = os.environ["APPLICATION_ID"]
@@ -18,18 +18,21 @@ APPLICATION_ID = os.environ["APPLICATION_ID"]
 def get_checkin_status(client):
     response = client.get_parameter(Name=CHECKIN_STATUS_PARAM)
     logging.debug(response)
+    return response["Parameter"]["Value"]
 
-    if response["Parameter"]["Value"] == "true":
-        return True
-    elif response["Parameter"]["Value"] == "false":
-        return False
-    else:
-        raise Exception()
+    # if response["Parameter"]["Value"] == "true":
+    #     return True
+    # elif response["Parameter"]["Value"] == "false":
+    #     return False
+    # else:
+    #     raise Exception()
 
 
 def set_checkin_status(client, event):
     current_status = get_checkin_status(client)
     desired_status = event["data"]["options"][0]["options"][0]["value"]
+
+    # "day_1" "day_2" "disabled"
 
     if current_status == desired_status:
         return f"Checkins already set to `{current_status}`"
@@ -50,10 +53,11 @@ def lambda_handler(event, context):
         sub_command = event["data"]["options"][0]["name"]
         if sub_command == "checkin_status":
             current_status = get_checkin_status(client)
-            if current_status:
-                message = "Checkins are currently `enabled`"
-            else:
-                message = "Checkins are currently `disabled`"
+            message = f"Checkins are currently set to `{current_status}`"
+            # if current_status:
+            #     message = "Checkins are currently `enabled`"
+            # else:
+            #     message = "Checkins are currently `disabled`"
         elif sub_command == "checkin_enabled":
             message = set_checkin_status(client, event)
 

@@ -51,9 +51,14 @@ commands = [
                 "options": [
                     {
                         "name": "enabled",
-                        "description": "True or False",
-                        "type": 5,
+                        "description": "Choose an option",
+                        "type": 3,
                         "required": True,
+                        "choices": [
+                            {"name": "Day 1", "value": "day_1"},
+                            {"name": "Day 2", "value": "day_2"},
+                            {"name": "Disabled", "value": "disabled"},
+                        ],
                     }
                 ],
             },
@@ -90,7 +95,7 @@ def delete_commands(url):
     print(r.content)
 
 
-# update_commands(f"https://discord.com/api/v8/applications/{bot_id}/commands")
+update_commands(f"https://discord.com/api/v8/applications/{bot_id}/commands")
 # get_commands(f"https://discord.com/api/v8/applications/{bot_id}/commands")
 # delete_commands(
 #     f"https://discord.com/api/v8/applications/{bot_id}/commands/1018746318740537365"

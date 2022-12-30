@@ -41,8 +41,8 @@ function deploy_prod {
             -o DiscordApplicationId="1015271519414399038" \
             -o DiscordPublicKey="42be1d3d4136ed14b3a46a60bb11fe92c73c0d84be9337f3e6f11e21edf6e75d" \
             -o GoogleApiKey="${GOOGLE_API_KEY}" \
-            -o GoogleSheetId="1Mi_J_r6vRcKU4AosO0-MGa9MnYX3Df22qchAUmQZVWk" \
-            -o ChallongeApiKey="${CHALLONGE_API_KEY}"
+            -o GoogleSheetId="1Mi_J_r6vRcKU4AosO0-MGa9MnYX3Df22qchAUmQZVWk"
+#            -o ChallongeApiKey="${CHALLONGE_API_KEY}"
 }
 
 case "${1}" in

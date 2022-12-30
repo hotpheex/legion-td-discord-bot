@@ -19,8 +19,6 @@ bot_id = os.getenv(f"bot_id_{env}")
 bot_key = os.getenv(f"bot_key_{env}")
 
 
-print(bot_key)
-
 commands = [
     {
         "name": "checkin",
@@ -70,6 +68,25 @@ commands = [
                 "name": "checkin_status",
                 "description": "Current Tournament Checkin Status",
                 "type": 1,
+            },
+            {
+                "name": "calculate_seed",
+                "description": "Calculate a Team Seed for two players",
+                "type": 1,
+                "options": [
+                    {
+                        "name": "player_1",
+                        "description": "Player 1",
+                        "type": 4,
+                        "required": True,
+                    },
+                    {
+                        "name": "player_2",
+                        "description": "Player 2",
+                        "type": 4,
+                        "required": True,
+                    },
+                ],
             },
         ],
     }

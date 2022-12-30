@@ -1,8 +1,9 @@
 import subprocess
-import sys
+from sys import executable
 from hashlib import sha512
-from shutil import make_archive
+from shutil import make_archive, copytree
 from tempfile import TemporaryDirectory
+from os import path
 
 import awacs.logs as alog
 import awacs.sts as asts
@@ -14,31 +15,32 @@ from botocore.exceptions import ClientError
 from troposphere import GetAtt
 
 
-def create_upload_deployment_archive(
-    lambda_requirements, lambda_code, lambda_code_hash, s3_layer_bucket, lambda_name
-):
+def create_upload_deployment_archive(local_path, s3_layer_bucket, lambda_name):
     with TemporaryDirectory() as tmpdir:
-        for dependency in lambda_requirements:
+        copytree(local_path, f"{tmpdir}/archive")
+
+        if path.exists(f"{tmpdir}/archive/requirements.txt"):
             subprocess.check_call(
                 [
-                    sys.executable,
+                    executable,
                     "-m",
                     "pip",
                     "install",
                     "--target",
                     f"{tmpdir}/archive",
-                    dependency,
+                    "-r",
+                    f"{tmpdir}/archive/requirements.txt",
                 ]
             )
 
-        with open(f"{tmpdir}/archive/lambda_function.py", "w") as fh:
-            fh.write(lambda_code)
-
         make_archive(f"{tmpdir}/archive", "zip", f"{tmpdir}/archive")
+
+        with open(f"{tmpdir}/archive.zip", "rb") as fh:
+            lambda_code_hash = sha512(fh.read()).hexdigest()[:10]
 
         s3_client = boto3.client("s3")
         try:
-            response = s3_client.upload_file(
+            s3_client.upload_file(
                 f"{tmpdir}/archive.zip",
                 s3_layer_bucket,
                 f"{lambda_name}/archive-{lambda_code_hash}.zip",
@@ -46,25 +48,23 @@ def create_upload_deployment_archive(
         except ClientError as e:
             raise SystemExit(e)
         print(f"{lambda_name}/archive-{lambda_code_hash}.zip Uploaded...")
-    return True
+
+    return lambda_code_hash
 
 
 def add(
     template,
     s3_layer_bucket,
     lambda_name,
-    lambda_requirements,
-    lambda_code,
-    lambda_handler,
+    local_path,
     lambda_runtime,
-    lambda_timeout=10,
+    lambda_timeout=180,
     lambda_vars={},
     iam_permissions=[],
 ):
-    lambda_code_hash = sha512(lambda_code.encode("utf-8")).hexdigest()[:10]
 
-    create_upload_deployment_archive(
-        lambda_requirements, lambda_code, lambda_code_hash, s3_layer_bucket, lambda_name
+    lambda_code_hash = create_upload_deployment_archive(
+        local_path, s3_layer_bucket, lambda_name
     )
 
     cfn_name = lambda_name.replace("-", " ").title().replace(" ", "")
@@ -121,33 +121,19 @@ def add(
         )
     )
 
-    # lambda_layer = template.add_resource(
-    #     lmd.LayerVersion(
-    #         f"{cfn_name}LambdaLayer",
-    #         LayerName=lambda_name,
-    #         Content=lmd.Content(
-    #             S3Bucket=s3_layer_bucket,
-    #             S3Key=f"{lambda_name}/archive.zip",
-    #         ),
-    #     )
-    # )
-
     lambda_function = template.add_resource(
         lmd.Function(
             f"{cfn_name}LambdaFunction",
-            # Code=lmd.Code(ZipFile=lambda_code),
-            # FunctionName=lambda_name,
             Code=lmd.Code(
                 S3Bucket=s3_layer_bucket,
                 S3Key=f"{lambda_name}/archive-{lambda_code_hash}.zip",
             ),
             Description=f"{lambda_name} Function",
             Environment=lmd.Environment(Variables=lambda_vars),
-            Handler=f"lambda_function.{lambda_handler}",
+            Handler=f"main.lambda_handler",
             Role=GetAtt(iam_lambda_execution_role, "Arn"),
             Runtime=lambda_runtime,
             Timeout=lambda_timeout,
-            # Layers=[Ref(lambda_layer)],
         )
     )
 

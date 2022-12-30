@@ -2,26 +2,64 @@ from os import environ
 
 import awacs.awslambda as almb
 import awacs.ssm as assm
-from troposphere import GetAtt, Ref, Sub, Template, ssm
+from troposphere import Template, Parameter, GetAtt, Ref, Sub, ssm
 
-import api_gateway_lambda
-import lambda_plus_layer
+from resources import api_gateway_lambda, lambda_plus_layer
 
-application_id = "1015271519414399038"
 s3_layer_bucket = "s3-buckets-lambdalayerbucket-1wvx0gjtmchjj"
 lambda_name_prefix = "legion-td-discord-bot"
-google_api_creds = environ["GOOGLE_API_CREDS"]
-discord_public_key = "42be1d3d4136ed14b3a46a60bb11fe92c73c0d84be9337f3e6f11e21edf6e75d"
-google_sheet_id = "1Mi_J_r6vRcKU4AosO0-MGa9MnYX3Df22qchAUmQZVWk"
-
 
 template = Template()
 template.set_version("2010-09-09")
 
+# Parameters
+application_id = template.add_parameter(
+    Parameter(
+        "DiscordApplicationId",
+        Description="Discord Application ID",
+        Type="String",
+    )
+)
+
+discord_public_key = template.add_parameter(
+    Parameter(
+        "DiscordPublicKey",
+        Description="Discord Public Key",
+        Type="String",
+    )
+)
+
+google_api_key = template.add_parameter(
+    Parameter(
+        "GoogleApiKey",
+        Description="Google API Key",
+        Type="String",
+        NoEcho=True,
+    )
+)
+
+google_sheet_id = template.add_parameter(
+    Parameter(
+        "GoogleSheetId",
+        Description="Google Sheet ID",
+        Type="String",
+    )
+)
+
+# challonge_api_key = template.add_parameter(
+#     Parameter(
+#         "ChallongeApiKey",
+#         Description="Challonge API Credentials",
+#         Type="String",
+#         NoEcho=True,
+#     )
+# )
+
+# Resources
 checkin_status_param = template.add_resource(
     ssm.Parameter(
         "SsmParameterCheckinStatus",
-        Name=f"/{lambda_name_prefix}/checkin-status",
+        Name=Sub("/${AWS::StackName}/checkin-status"),
         Description="Tournament checkin status",
         Type="String",
         Value="false",
@@ -32,14 +70,12 @@ template, checkin_function_arn = lambda_plus_layer.add(
     template,
     s3_layer_bucket=s3_layer_bucket,
     lambda_name=f"{lambda_name_prefix}-checkin",
-    lambda_requirements=open("../src/checkin/requirements.txt").readlines(),
-    lambda_code=open("../src/checkin/lambda.py").read(),
-    lambda_handler="lambda_handler",
+    local_path="../src/checkin",
     lambda_runtime="python3.9",
     lambda_vars={
-        "APPLICATION_ID": application_id,
-        "GOOGLE_API_CREDS": google_api_creds,
-        "GOOGLE_SHEET_ID": google_sheet_id,
+        "APPLICATION_ID": Ref(application_id),
+        "GOOGLE_API_KEY": Ref(google_api_key),
+        "GOOGLE_SHEET_ID": Ref(google_sheet_id),
         "CHECKIN_STATUS_PARAM": Ref(checkin_status_param),
     },
     iam_permissions=[
@@ -59,12 +95,10 @@ template, manage_function_arn = lambda_plus_layer.add(
     template,
     s3_layer_bucket=s3_layer_bucket,
     lambda_name=f"{lambda_name_prefix}-manage",
-    lambda_requirements=open("../src/manage/requirements.txt").readlines(),
-    lambda_code=open("../src/manage/lambda.py").read(),
-    lambda_handler="lambda_handler",
+    local_path="../src/manage",
     lambda_runtime="python3.9",
     lambda_vars={
-        "APPLICATION_ID": application_id,
+        "APPLICATION_ID": Ref(application_id),
         "CHECKIN_STATUS_PARAM": Ref(checkin_status_param),
     },
     iam_permissions=[
@@ -80,18 +114,30 @@ template, manage_function_arn = lambda_plus_layer.add(
     ],
 )
 
+# template, challonge_function_arn = lambda_plus_layer.add(
+#     template,
+#     s3_layer_bucket=s3_layer_bucket,
+#     lambda_name=f"{lambda_name_prefix}-challonge",
+#     lambda_requirements=open("../src/challonge/requirements.txt").readlines(),
+#     lambda_code=open("../src/challonge/lambda.py").read(),
+#     lambda_runtime="python3.9",
+#     lambda_vars={
+#         "APPLICATION_ID": Ref(application_id),
+#         "CHALLONGE_API_KEY": Ref(challonge_api_key),
+#     },
+# )
+
 template, handler_function_arn = lambda_plus_layer.add(
     template,
     s3_layer_bucket=s3_layer_bucket,
     lambda_name=f"{lambda_name_prefix}-handler",
-    lambda_requirements=open("../src/handler/requirements.txt").readlines(),
-    lambda_code=open("../src/handler/lambda.py").read(),
-    lambda_handler="lambda_handler",
+    local_path="../src/handler",
     lambda_runtime="python3.9",
     lambda_vars={
-        "DISCORD_PUBLIC_KEY": discord_public_key,
+        "DISCORD_PUBLIC_KEY": Ref(discord_public_key),
         "LAMBDA_CHECKIN": GetAtt(checkin_function_arn, "Arn"),
         "LAMBDA_MANAGE": GetAtt(manage_function_arn, "Arn"),
+        # "LAMBDA_CHALLONGE": GetAtt(challonge_function_arn, "Arn"),
     },
     iam_permissions=[
         {
@@ -104,14 +150,17 @@ template, handler_function_arn = lambda_plus_layer.add(
             "resources": [GetAtt(manage_function_arn, "Arn")],
             "actions": [almb.InvokeFunction],
         },
+        # {
+        #     "name": "invoke-challonge-function",
+        #     "resources": [GetAtt(challonge_function_arn, "Arn")],
+        #     "actions": [almb.InvokeFunction],
+        # },
     ],
 )
 
 template = api_gateway_lambda.add(
     template,
-    api_endpoints=[
-        {"resource": "event", "methods": ["POST"], "lambda": handler_function_arn},
-    ],
+    handler_function=handler_function_arn,
     stage_name="stage",
 )
 

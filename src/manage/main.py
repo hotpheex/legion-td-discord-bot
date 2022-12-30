@@ -3,7 +3,7 @@ Admin commands to manage tournaments
 """
 import json
 import logging
-import os
+from os import environ
 
 import boto3
 from requests import patch
@@ -11,8 +11,8 @@ from requests.exceptions import RequestException
 
 logging.getLogger().setLevel(logging.DEBUG)
 
-CHECKIN_STATUS_PARAM = os.environ["CHECKIN_STATUS_PARAM"]
-APPLICATION_ID = os.environ["APPLICATION_ID"]
+CHECKIN_STATUS_PARAM = environ["CHECKIN_STATUS_PARAM"]
+APPLICATION_ID = environ["APPLICATION_ID"]
 
 
 def get_checkin_status(client):
@@ -20,19 +20,10 @@ def get_checkin_status(client):
     logging.debug(response)
     return response["Parameter"]["Value"]
 
-    # if response["Parameter"]["Value"] == "true":
-    #     return True
-    # elif response["Parameter"]["Value"] == "false":
-    #     return False
-    # else:
-    #     raise Exception()
-
 
 def set_checkin_status(client, event):
     current_status = get_checkin_status(client)
     desired_status = event["data"]["options"][0]["options"][0]["value"]
-
-    # "day_1" "day_2" "disabled"
 
     if current_status == desired_status:
         return f"Checkins already set to `{current_status}`"
@@ -54,10 +45,6 @@ def lambda_handler(event, context):
         if sub_command == "checkin_status":
             current_status = get_checkin_status(client)
             message = f"Checkins are currently set to `{current_status}`"
-            # if current_status:
-            #     message = "Checkins are currently `enabled`"
-            # else:
-            #     message = "Checkins are currently `disabled`"
         elif sub_command == "checkin_enabled":
             message = set_checkin_status(client, event)
 

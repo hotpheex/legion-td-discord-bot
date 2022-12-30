@@ -3,19 +3,23 @@
 ##############################################
 import json
 import os
+import sys
 
 import requests
 
+args = sys.argv
+if len(args) < 2 or (args[1] not in ["dev", "prod"]):
+    raise SystemExit("python3 register_commands.py <dev | prod>")
+else:
+    env = args[1]
+
 API_ENDPOINT = "https://discord.com/api"
 
-bot_id = os.getenv("bot_id")
-bot_key = os.getenv("bot_key")
+bot_id = os.getenv(f"bot_id_{env}")
+bot_key = os.getenv(f"bot_key_{env}")
 
-# manage_roles = {
-#     "935078157244055562": "Developer",
-#     "935077876158586931": "Tournament Director",
-#     "971878714176589844": "Nova Cup Staff",
-# }
+
+print(bot_key)
 
 commands = [
     {
@@ -68,7 +72,19 @@ commands = [
                 "type": 1,
             },
         ],
-    },
+    }
+    # {
+    #     "name": "challonge",
+    #     "description": "Challonge Commands",
+    #     "dm_permission": False,
+    #     "options": [
+    #         {
+    #             "name": "create_participants",
+    #             "description": "Create Participants in Bracket",
+    #             "type": 1,
+    #         },
+    #     ],
+    # },
 ]
 
 

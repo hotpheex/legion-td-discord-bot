@@ -12,49 +12,15 @@ import gspread
 from requests import patch
 from requests.exceptions import RequestException
 
+from constants import *
+
 # Google SA setup: https://docs.gspread.org/en/latest/oauth2.html#for-bots-using-service-account
 
-logging.getLogger().setLevel(logging.DEBUG)
+logging.getLogger().setLevel(logging.INFO)
 
-GOOGLE_API_CREDS = os.environ["GOOGLE_API_CREDS"]
-GOOGLE_SHEET_ID = os.environ["GOOGLE_SHEET_ID"]
+GOOGLE_API_KEY = os.environ["GOOGLE_API_KEY"]
 APPLICATION_ID = os.environ["APPLICATION_ID"]
 CHECKIN_STATUS_PARAM = os.environ["CHECKIN_STATUS_PARAM"]
-
-COLUMNS = {
-    "team": {
-        "name": 2,
-        "day_1": 6,
-        "day_2": 7,
-        "day_1_range": "A",
-    },
-    "solo": {
-        "name": 8,
-        "day_1": 10,
-        "day_1_range": "H",
-    },
-}
-COLORS = {
-    "team": {
-        "red": 0.414,
-        "green": 0.656,
-        "blue": 0.309,
-    },
-    "solo": {
-        "red": 0.641,
-        "green": 0.756,
-        "blue": 0.953,
-    },
-}
-CHECKED_IN_MSG = "Checked In"
-CHANNEL_IDS = {
-    "935116296587202632": "Division 4",
-    "935116039400857620": "Division 3",
-    "935116002000240680": "Division 2",
-    "935115970945613884": "Division 1",
-}
-# Test Channel
-CHANNEL_IDS["1023401872750547014"] = "Division 4"
 
 
 def get_checkin_status():
@@ -76,8 +42,8 @@ def find_name_in_divisions(sheet, query_name, query_column):
 
 
 def checkin(event, checkin_status):
-    gcreds = json.loads(b64decode(GOOGLE_API_CREDS).decode("utf-8"))
-    gc = gspread.service_account_from_dict(gcreds)
+    gcreds = json.loads(b64decode(GOOGLE_API_KEY).decode("utf-8"))
+    gc = gspread.service_account_from_dict(gcreds, client_factory=gspread.BackoffClient)
 
     sub_command = event["data"]["options"][0]["name"]
     player_name = event["member"]["nick"]
@@ -87,9 +53,7 @@ def checkin(event, checkin_status):
     if sub_command == "team":
         team_name = event["data"]["options"][0]["options"][0]["value"]
 
-    # TEST SHEET
-    if event["guild_id"] == "755422118719520827":
-        GOOGLE_SHEET_ID = "1AwWaWBdKxYCSj6LLVZrsfI_zdo0gAqduvng_DkxmeE8"
+    GOOGLE_SHEET_ID = os.environ["GOOGLE_SHEET_ID"]
 
     sh = gc.open_by_key(GOOGLE_SHEET_ID)
     ws = sh.worksheet(CHANNEL_IDS[channel_id])

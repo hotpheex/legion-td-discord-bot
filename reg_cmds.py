@@ -73,18 +73,38 @@ commands = [
             },
         ],
     }
-    # {
-    #     "name": "challonge",
-    #     "description": "Challonge Commands",
-    #     "dm_permission": False,
-    #     "options": [
-    #         {
-    #             "name": "create_participants",
-    #             "description": "Create Participants in Bracket",
-    #             "type": 1,
-    #         },
-    #     ],
-    # },
+    {
+        "name": "challonge",
+        "description": "Challonge Commands",
+        "dm_permission": False,
+        "options": [
+            {
+                "name": "update_bracket",
+                "description": "Update participants in a bracket",
+                "type": 1,
+                "options": [
+                    {
+                        "name": "tournament_url",
+                        "description": "Tournament URL / ID",
+                        "type": 3,
+                        "required": True,
+                    },
+                    {
+                        "name": "division",
+                        "description": "Choose a Division",
+                        "type": 3,
+                        "required": True,
+                        "choices": [
+                            {"name": "Division 1", "value": "division1"},
+                            {"name": "Division 2", "value": "division2"},
+                            {"name": "Division 3", "value": "division3"},
+                            {"name": "Division 4", "value": "division4"},
+                        ],
+                    }
+                ],
+            },
+        ],
+    },
 ]
 
 

@@ -94,6 +94,25 @@ commands = [
                     },
                 ],
             },
+            {
+                "name": "calculate_seed",
+                "description": "Calculate a Team Seed for two players",
+                "type": 1,
+                "options": [
+                    {
+                        "name": "player_1",
+                        "description": "Player 1",
+                        "type": 4,
+                        "required": True,
+                    },
+                    {
+                        "name": "player_2",
+                        "description": "Player 2",
+                        "type": 4,
+                        "required": True,
+                    },
+                ],
+            },
         ],
     },
 ]

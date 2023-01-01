@@ -4,6 +4,7 @@ Admin commands to manage tournaments
 import json
 import logging
 from os import environ
+from math import ceil
 
 import boto3
 from requests import patch
@@ -37,6 +38,16 @@ def set_checkin_status(client, event):
         return f"Checkins are now set to `{desired_status}`"
 
 
+def calculate_team_seed(event):
+    ratings = []
+    for player in event["data"]["options"][0]["options"]:
+        ratings.append(player["value"])
+
+    team_rating = ceil((2 * max(ratings) + min(ratings)) / 3)
+
+    return f"Team rating for `{ratings}`: `{team_rating}`"
+
+
 def lambda_handler(event, context):
     logging.debug(json.dumps(event))
 
@@ -49,6 +60,8 @@ def lambda_handler(event, context):
             message = f"Checkins are currently set to `{current_status}`"
         elif sub_command == "checkin_enabled":
             message = set_checkin_status(client, event)
+        elif sub_command == "calculate_seed":
+            message = calculate_team_seed(event)
         elif sub_command == "update_bracket":
             message = challonge.update_bracket(event)
 

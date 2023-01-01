@@ -19,8 +19,6 @@ bot_id = os.getenv(f"bot_id_{env}")
 bot_key = os.getenv(f"bot_key_{env}")
 
 
-print(bot_key)
-
 commands = [
     {
         "name": "checkin",
@@ -71,13 +69,6 @@ commands = [
                 "description": "Current Tournament Checkin Status",
                 "type": 1,
             },
-        ],
-    }
-    {
-        "name": "challonge",
-        "description": "Challonge Commands",
-        "dm_permission": False,
-        "options": [
             {
                 "name": "update_bracket",
                 "description": "Update participants in a bracket",
@@ -95,12 +86,12 @@ commands = [
                         "type": 3,
                         "required": True,
                         "choices": [
-                            {"name": "Division 1", "value": "division1"},
-                            {"name": "Division 2", "value": "division2"},
-                            {"name": "Division 3", "value": "division3"},
-                            {"name": "Division 4", "value": "division4"},
+                            {"name": "Division 1", "value": "Division 1"},
+                            {"name": "Division 2", "value": "Division 2"},
+                            {"name": "Division 3", "value": "Division 3"},
+                            {"name": "Division 4", "value": "Division 4"},
                         ],
-                    }
+                    },
                 ],
             },
         ],
@@ -134,5 +125,5 @@ def delete_commands(url):
 update_commands(f"https://discord.com/api/v8/applications/{bot_id}/commands")
 # get_commands(f"https://discord.com/api/v8/applications/{bot_id}/commands")
 # delete_commands(
-#     f"https://discord.com/api/v8/applications/{bot_id}/commands/1018746318740537365"
+#     f"https://discord.com/api/v8/applications/{bot_id}/commands/1033232910590947418"
 # )

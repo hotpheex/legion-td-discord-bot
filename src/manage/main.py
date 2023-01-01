@@ -9,6 +9,8 @@ import boto3
 from requests import patch
 from requests.exceptions import RequestException
 
+import challonge
+
 logging.getLogger().setLevel(logging.DEBUG)
 
 CHECKIN_STATUS_PARAM = environ["CHECKIN_STATUS_PARAM"]
@@ -47,6 +49,8 @@ def lambda_handler(event, context):
             message = f"Checkins are currently set to `{current_status}`"
         elif sub_command == "checkin_enabled":
             message = set_checkin_status(client, event)
+        elif sub_command == "update_bracket":
+            message = challonge.update_bracket(event)
 
         response = patch(
             f"https://discord.com/api/webhooks/{APPLICATION_ID}/{event['token']}/messages/@original",

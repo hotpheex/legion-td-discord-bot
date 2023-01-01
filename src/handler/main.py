@@ -19,7 +19,6 @@ DISCORD_PING_PONG = {"statusCode": 200, "body": json.dumps({"type": 1})}
 
 LAMBDA_CHECKIN = os.environ["LAMBDA_CHECKIN"]
 LAMBDA_MANAGE = os.environ["LAMBDA_MANAGE"]
-# LAMBDA_CHALLONGE = os.environ["LAMBDA_CHALLONGE"]
 
 # INTERACTION RESPONSE TYPES
 # https://discord.com/developers/docs/interactions/receiving-and-responding#interaction-response-object-interaction-callback-type
@@ -27,7 +26,6 @@ LAMBDA_MANAGE = os.environ["LAMBDA_MANAGE"]
 commands = {
     "checkin": LAMBDA_CHECKIN,
     "manage": LAMBDA_MANAGE,
-    # "challonge": LAMBDA_CHALLONGE,
 }
 
 
@@ -67,8 +65,12 @@ def lambda_handler(event, context):
     if body["type"] == 1:
         return DISCORD_PING_PONG
 
-    command = body["data"]["name"]
-    # sub_command = body["data"]["options"][0]["name"]
+    if body["type"] == 2:
+        command = body["data"]["name"]
+        # sub_command = body["data"]["options"][0]["name"]
+
+    # if body["type"] == 3: # if interaction is a form
+    #     command = body["data"]
 
     client = boto3.client("lambda")
 

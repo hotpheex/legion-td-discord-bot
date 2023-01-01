@@ -12,7 +12,7 @@ import troposphere.awslambda as lmd
 import troposphere.iam as iam
 from awacs.aws import Allow, PolicyDocument, Principal, Statement
 from botocore.exceptions import ClientError
-from troposphere import GetAtt
+from troposphere import GetAtt, Sub
 
 
 def create_upload_deployment_archive(local_path, s3_layer_bucket, lambda_name):
@@ -128,7 +128,7 @@ def add(
                 S3Bucket=s3_layer_bucket,
                 S3Key=f"{lambda_name}/archive-{lambda_code_hash}.zip",
             ),
-            Description=f"{lambda_name} Function",
+            Description=Sub(f"${{AWS::StackName}} {lambda_name} Function"),
             Environment=lmd.Environment(Variables=lambda_vars),
             Handler=f"main.lambda_handler",
             Role=GetAtt(iam_lambda_execution_role, "Arn"),

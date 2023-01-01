@@ -1,10 +1,9 @@
 """
 Handle checkin command
 """
-from gettext import find
 import json
 import logging
-import os
+from os import environ
 from base64 import b64decode
 
 import boto3
@@ -18,9 +17,10 @@ from constants import *
 
 logging.getLogger().setLevel(logging.INFO)
 
-GOOGLE_API_KEY = os.environ["GOOGLE_API_KEY"]
-APPLICATION_ID = os.environ["APPLICATION_ID"]
-CHECKIN_STATUS_PARAM = os.environ["CHECKIN_STATUS_PARAM"]
+GOOGLE_API_KEY = environ["GOOGLE_API_KEY"]
+GOOGLE_SHEET_ID = environ["GOOGLE_SHEET_ID"]
+APPLICATION_ID = environ["APPLICATION_ID"]
+CHECKIN_STATUS_PARAM = environ["CHECKIN_STATUS_PARAM"]
 
 
 def get_checkin_status():
@@ -52,8 +52,6 @@ def checkin(event, checkin_status):
     channel_id = event["channel_id"]
     if sub_command == "team":
         team_name = event["data"]["options"][0]["options"][0]["value"]
-
-    GOOGLE_SHEET_ID = os.environ["GOOGLE_SHEET_ID"]
 
     sh = gc.open_by_key(GOOGLE_SHEET_ID)
     ws = sh.worksheet(CHANNEL_IDS[channel_id])

@@ -46,14 +46,14 @@ google_sheet_id = template.add_parameter(
     )
 )
 
-# challonge_api_key = template.add_parameter(
-#     Parameter(
-#         "ChallongeApiKey",
-#         Description="Challonge API Credentials",
-#         Type="String",
-#         NoEcho=True,
-#     )
-# )
+challonge_api_key = template.add_parameter(
+    Parameter(
+        "ChallongeApiKey",
+        Description="Challonge API Credentials",
+        Type="String",
+        NoEcho=True,
+    )
+)
 
 # Resources
 checkin_status_param = template.add_resource(
@@ -100,6 +100,9 @@ template, manage_function_arn = lambda_plus_layer.add(
     lambda_vars={
         "APPLICATION_ID": Ref(application_id),
         "CHECKIN_STATUS_PARAM": Ref(checkin_status_param),
+        "CHALLONGE_API_KEY": Ref(challonge_api_key),
+        "GOOGLE_API_KEY": Ref(google_api_key),
+        "GOOGLE_SHEET_ID": Ref(google_sheet_id),
     },
     iam_permissions=[
         {
@@ -114,19 +117,6 @@ template, manage_function_arn = lambda_plus_layer.add(
     ],
 )
 
-# template, challonge_function_arn = lambda_plus_layer.add(
-#     template,
-#     s3_layer_bucket=s3_layer_bucket,
-#     lambda_name=f"{lambda_name_prefix}-challonge",
-#     lambda_requirements=open("../src/challonge/requirements.txt").readlines(),
-#     lambda_code=open("../src/challonge/lambda.py").read(),
-#     lambda_runtime="python3.9",
-#     lambda_vars={
-#         "APPLICATION_ID": Ref(application_id),
-#         "CHALLONGE_API_KEY": Ref(challonge_api_key),
-#     },
-# )
-
 template, handler_function_arn = lambda_plus_layer.add(
     template,
     s3_layer_bucket=s3_layer_bucket,
@@ -137,7 +127,6 @@ template, handler_function_arn = lambda_plus_layer.add(
         "DISCORD_PUBLIC_KEY": Ref(discord_public_key),
         "LAMBDA_CHECKIN": GetAtt(checkin_function_arn, "Arn"),
         "LAMBDA_MANAGE": GetAtt(manage_function_arn, "Arn"),
-        # "LAMBDA_CHALLONGE": GetAtt(challonge_function_arn, "Arn"),
     },
     iam_permissions=[
         {
@@ -150,11 +139,6 @@ template, handler_function_arn = lambda_plus_layer.add(
             "resources": [GetAtt(manage_function_arn, "Arn")],
             "actions": [almb.InvokeFunction],
         },
-        # {
-        #     "name": "invoke-challonge-function",
-        #     "resources": [GetAtt(challonge_function_arn, "Arn")],
-        #     "actions": [almb.InvokeFunction],
-        # },
     ],
 )
 

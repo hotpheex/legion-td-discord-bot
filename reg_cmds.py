@@ -70,6 +70,31 @@ commands = [
                 "type": 1,
             },
             {
+                "name": "update_bracket",
+                "description": "Update participants in a bracket",
+                "type": 1,
+                "options": [
+                    {
+                        "name": "tournament_url",
+                        "description": "Tournament URL / ID",
+                        "type": 3,
+                        "required": True,
+                    },
+                    {
+                        "name": "division",
+                        "description": "Choose a Division",
+                        "type": 3,
+                        "required": True,
+                        "choices": [
+                            {"name": "Division 1", "value": "Division 1"},
+                            {"name": "Division 2", "value": "Division 2"},
+                            {"name": "Division 3", "value": "Division 3"},
+                            {"name": "Division 4", "value": "Division 4"},
+                        ],
+                    },
+                ],
+            },
+            {
                 "name": "calculate_seed",
                 "description": "Calculate a Team Seed for two players",
                 "type": 1,
@@ -89,19 +114,7 @@ commands = [
                 ],
             },
         ],
-    }
-    # {
-    #     "name": "challonge",
-    #     "description": "Challonge Commands",
-    #     "dm_permission": False,
-    #     "options": [
-    #         {
-    #             "name": "create_participants",
-    #             "description": "Create Participants in Bracket",
-    #             "type": 1,
-    #         },
-    #     ],
-    # },
+    },
 ]
 
 
@@ -131,5 +144,5 @@ def delete_commands(url):
 update_commands(f"https://discord.com/api/v8/applications/{bot_id}/commands")
 # get_commands(f"https://discord.com/api/v8/applications/{bot_id}/commands")
 # delete_commands(
-#     f"https://discord.com/api/v8/applications/{bot_id}/commands/1018746318740537365"
+#     f"https://discord.com/api/v8/applications/{bot_id}/commands/1033232910590947418"
 # )

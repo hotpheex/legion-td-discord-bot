@@ -1,2 +1,5 @@
+.vscode
+__pycache__
+
 cloudformation/template.yaml
 creds.sh

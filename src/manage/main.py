@@ -10,6 +10,8 @@ import boto3
 from requests import patch
 from requests.exceptions import RequestException
 
+import challonge
+
 logging.getLogger().setLevel(logging.DEBUG)
 
 CHECKIN_STATUS_PARAM = environ["CHECKIN_STATUS_PARAM"]
@@ -60,6 +62,8 @@ def lambda_handler(event, context):
             message = set_checkin_status(client, event)
         elif sub_command == "calculate_seed":
             message = calculate_team_seed(event)
+        elif sub_command == "update_bracket":
+            message = challonge.update_bracket(event)
 
         response = patch(
             f"https://discord.com/api/webhooks/{APPLICATION_ID}/{event['token']}/messages/@original",

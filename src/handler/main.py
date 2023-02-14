@@ -19,6 +19,7 @@ DISCORD_PING_PONG = {"statusCode": 200, "body": json.dumps({"type": 1})}
 
 LAMBDA_CHECKIN = os.environ["LAMBDA_CHECKIN"]
 LAMBDA_MANAGE = os.environ["LAMBDA_MANAGE"]
+LAMBDA_RESULTS = os.environ["LAMBDA_RESULTS"]
 
 # INTERACTION RESPONSE TYPES
 # https://discord.com/developers/docs/interactions/receiving-and-responding#interaction-response-object-interaction-callback-type
@@ -26,6 +27,7 @@ LAMBDA_MANAGE = os.environ["LAMBDA_MANAGE"]
 commands = {
     "checkin": LAMBDA_CHECKIN,
     "manage": LAMBDA_MANAGE,
+    "results": LAMBDA_RESULTS
 }
 
 

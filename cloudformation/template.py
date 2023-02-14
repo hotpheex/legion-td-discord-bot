@@ -91,6 +91,22 @@ template, checkin_function_arn = lambda_plus_layer.add(
     ],
 )
 
+template, results_function_arn = lambda_plus_layer.add(
+    template,
+    s3_layer_bucket=s3_layer_bucket,
+    lambda_name=f"{lambda_name_prefix}-results",
+    local_path="../src/results",
+    lambda_runtime="python3.9",
+    lambda_vars={
+        "APPLICATION_ID": Ref(application_id),
+        "GOOGLE_API_KEY": Ref(google_api_key),
+        "GOOGLE_SHEET_ID": Ref(google_sheet_id),
+        "CHALLONGE_API_KEY": Ref(challonge_api_key)
+    },
+    iam_permissions=[
+    ],
+)
+
 template, manage_function_arn = lambda_plus_layer.add(
     template,
     s3_layer_bucket=s3_layer_bucket,
@@ -127,6 +143,7 @@ template, handler_function_arn = lambda_plus_layer.add(
         "DISCORD_PUBLIC_KEY": Ref(discord_public_key),
         "LAMBDA_CHECKIN": GetAtt(checkin_function_arn, "Arn"),
         "LAMBDA_MANAGE": GetAtt(manage_function_arn, "Arn"),
+        "LAMBDA_RESULTS": GetAtt(results_function_arn, "Arn"),
     },
     iam_permissions=[
         {
@@ -137,6 +154,11 @@ template, handler_function_arn = lambda_plus_layer.add(
         {
             "name": "invoke-manage-function",
             "resources": [GetAtt(manage_function_arn, "Arn")],
+            "actions": [almb.InvokeFunction],
+        },
+        {
+            "name": "invoke-results-function",
+            "resources": [GetAtt(results_function_arn, "Arn")],
             "actions": [almb.InvokeFunction],
         },
     ],

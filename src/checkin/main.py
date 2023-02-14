@@ -23,13 +23,6 @@ APPLICATION_ID = environ["APPLICATION_ID"]
 CHECKIN_STATUS_PARAM = environ["CHECKIN_STATUS_PARAM"]
 
 
-def get_checkin_status():
-    client = boto3.client("ssm")
-    response = client.get_parameter(Name=CHECKIN_STATUS_PARAM)
-    logging.debug(response)
-    return response["Parameter"]["Value"]
-
-
 def find_name_in_divisions(sheet, query_name, query_column):
     worksheets = sheet.worksheets()
     for sheet in worksheets:
@@ -109,7 +102,12 @@ def lambda_handler(event, context):
     logging.debug(json.dumps(event))
 
     try:
-        checkin_status = get_checkin_status()
+        # Checkin Status
+        client = boto3.client("ssm")
+        response = client.get_parameter(Name=CHECKIN_STATUS_PARAM)
+        logging.debug(response)
+        checkin_status = response["Parameter"]["Value"]
+
         if checkin_status == "disabled":
             message = f":no_entry: Tournament checkins are not currently open"
         elif event["channel_id"] not in CHANNEL_IDS:
@@ -130,5 +128,3 @@ def lambda_handler(event, context):
         logging.error(e)
     except Exception as e:
         logging.error(e)
-
-    return True

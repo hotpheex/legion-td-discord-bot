@@ -5,14 +5,14 @@ Runs on Lambda functions exposed via API Gateway
 
 ```
 .
-├── cloudformation - AWS infrastructure as code
-├── deploy.sh      - Local deploy script
-├── slash_cmds.py    - Discord slash commands
+├── cloudformation <= AWS infrastructure as code
+├── deploy.sh      <= Local deploy script
+├── slash_cmds.py  <= Discord slash commands
 └── src
-    ├── handler    - Handles request & invokes respective lambda
-    ├── checkin    - Checkin before tournament
-    ├── manage     - Tournament organiser commands
-    └── results    - Report match results
+    ├── handler    <= Handles request & invokes respective lambda
+    ├── checkin    <= Checkin before tournament
+    ├── manage     <= Tournament organiser commands
+    └── results    <= Report match results
 ```
 
 Update Discord slash commands:

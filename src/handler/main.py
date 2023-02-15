@@ -9,6 +9,7 @@ import traceback
 from os import environ
 
 import boto3
+
 # import botocore.exceptions
 from nacl.exceptions import BadSignatureError
 from nacl.signing import VerifyKey
@@ -89,5 +90,10 @@ def lambda_handler(event, context):
     #     return discord_body(200, 4, f"Unable to {command}, {e}")
     except Exception as e:
         logging.exception(e)
-        post(ALERT_WEBHOOK, json={"content": f"`{context.function_name} - {context.log_stream_name}`\n```{traceback.format_exc()}```"})
+        post(
+            ALERT_WEBHOOK,
+            json={
+                "content": f"`{context.function_name} - {context.log_stream_name}`\n```{traceback.format_exc()}```"
+            },
+        )
         return discord_body(200, 4, f"Unable to {command}, {e}")

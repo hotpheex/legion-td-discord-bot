@@ -74,7 +74,12 @@ def lambda_handler(event, context):
         logging.debug(response.json())
     except Exception as e:
         logging.exception(e)
-        post(ALERT_WEBHOOK, json={"content": f"`{context.function_name} - {context.log_stream_name}`\n```{traceback.format_exc()}```"})
+        post(
+            ALERT_WEBHOOK,
+            json={
+                "content": f"`{context.function_name} - {context.log_stream_name}`\n```{traceback.format_exc()}```"
+            },
+        )
         patch(
             f"https://discord.com/api/webhooks/{APPLICATION_ID}/{event['token']}/messages/@original",
             json={"content": ":warning: Command failed unexpectedly"},

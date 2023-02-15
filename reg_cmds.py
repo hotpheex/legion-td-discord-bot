@@ -75,7 +75,7 @@ commands = [
                 "type": 1,
                 "options": [
                     {
-                        "name": "tournament_url",
+                        "name": "tournament_id",
                         "description": "Tournament URL / ID",
                         "type": 3,
                         "required": True,
@@ -112,6 +112,31 @@ commands = [
                         "required": True,
                     },
                 ],
+            },
+        ],
+    },
+    {
+        "name": "results",
+        "description": "Report results for a match",
+        "dm_permission": False,
+        "options": [
+            {
+                "name": "winning_team",
+                "description": "Winning team name",
+                "type": 3,
+                "required": True,
+            },
+            {
+                "name": "winning_score",
+                "description": "Score of winning team",
+                "type": 4,
+                "required": True,
+            },
+            {
+                "name": "losing_score",
+                "description": "Score of losing team",
+                "type": 4,
+                "required": True,
             },
         ],
     },

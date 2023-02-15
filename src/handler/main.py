@@ -5,20 +5,25 @@ Invoke async function to process command
 """
 import json
 import logging
-import os
+import traceback
+from os import environ
 
 import boto3
-import botocore.exceptions
+
+# import botocore.exceptions
 from nacl.exceptions import BadSignatureError
 from nacl.signing import VerifyKey
+from requests import post
 
 logging.getLogger().setLevel(logging.INFO)
 
-DISCORD_PUBLIC_KEY = os.environ["DISCORD_PUBLIC_KEY"]
+DISCORD_PUBLIC_KEY = environ["DISCORD_PUBLIC_KEY"]
 DISCORD_PING_PONG = {"statusCode": 200, "body": json.dumps({"type": 1})}
 
-LAMBDA_CHECKIN = os.environ["LAMBDA_CHECKIN"]
-LAMBDA_MANAGE = os.environ["LAMBDA_MANAGE"]
+LAMBDA_CHECKIN = environ["LAMBDA_CHECKIN"]
+LAMBDA_MANAGE = environ["LAMBDA_MANAGE"]
+LAMBDA_RESULTS = environ["LAMBDA_RESULTS"]
+ALERT_WEBHOOK = environ["ALERT_WEBHOOK"]
 
 # INTERACTION RESPONSE TYPES
 # https://discord.com/developers/docs/interactions/receiving-and-responding#interaction-response-object-interaction-callback-type
@@ -26,6 +31,7 @@ LAMBDA_MANAGE = os.environ["LAMBDA_MANAGE"]
 commands = {
     "checkin": LAMBDA_CHECKIN,
     "manage": LAMBDA_MANAGE,
+    "results": LAMBDA_RESULTS,
 }
 
 
@@ -67,10 +73,6 @@ def lambda_handler(event, context):
 
     if body["type"] == 2:
         command = body["data"]["name"]
-        # sub_command = body["data"]["options"][0]["name"]
-
-    # if body["type"] == 3: # if interaction is a form
-    #     command = body["data"]
 
     client = boto3.client("lambda")
 
@@ -83,9 +85,15 @@ def lambda_handler(event, context):
         )
         logging.debug(response["StatusCode"])
         return discord_body(200, 5, "processing")
-    except botocore.exceptions.ClientError as e:
-        logging.error(e)
-        return discord_body(200, 4, f"Unable to {command}, {e}")
+    # except botocore.exceptions.ClientError as e:
+    #     logging.error(e)
+    #     return discord_body(200, 4, f"Unable to {command}, {e}")
     except Exception as e:
-        logging.error(e)
+        logging.exception(e)
+        post(
+            ALERT_WEBHOOK,
+            json={
+                "content": f"`{context.function_name} - {context.log_stream_name}`\n```{traceback.format_exc()}```"
+            },
+        )
         return discord_body(200, 4, f"Unable to {command}, {e}")

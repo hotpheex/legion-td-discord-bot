@@ -1,11 +1,10 @@
 import json
 import logging
-from os import environ
 from base64 import b64decode
+from os import environ
 
-import requests
 import gspread
-
+import requests
 from constants import *
 
 logging.getLogger().setLevel(logging.DEBUG)
@@ -23,25 +22,27 @@ CHALLONGE_API_KEY = environ["CHALLONGE_API_KEY"]
 """API Calls"""
 
 
-def _get_tournament(tournament_url):
+def _get_tournament(tournament_id):
     res = requests.get(
-        f"{BASE_URL}/tournaments/{tournament_url}.json",
+        f"{BASE_URL}/tournaments/{tournament_id}.json",
         params={"api_key": CHALLONGE_API_KEY},
         headers=HEADERS,
     )
+    res.raise_for_status()
     return res.json()
 
 
-def _get_participants(tournament_url):
+def _get_participants(tournament_id):
     res = requests.get(
-        f"{BASE_URL}/tournaments/{tournament_url}/participants.json",
+        f"{BASE_URL}/tournaments/{tournament_id}/participants.json",
         params={"api_key": CHALLONGE_API_KEY},
         headers=HEADERS,
     )
+    res.raise_for_status()
     return res.json()
 
 
-def _add_bulk_participant(tournament_url, names):
+def _add_bulk_participant(tournament_id, names):
     data = [
         ("api_key", CHALLONGE_API_KEY),
     ]
@@ -49,11 +50,11 @@ def _add_bulk_participant(tournament_url, names):
         data.append(("participants[][name]", name))
 
     res = requests.post(
-        f"{BASE_URL}/tournaments/{tournament_url}/participants/bulk_add.json",
+        f"{BASE_URL}/tournaments/{tournament_id}/participants/bulk_add.json",
         data=data,
         headers=HEADERS,
     )
-
+    res.raise_for_status()
     return res.json()
 
 
@@ -85,19 +86,19 @@ def get_checked_in_teams(division):
 
 def update_bracket(event):
     for i in event["data"]["options"][0]["options"]:
-        if i["name"] == "tournament_url":
-            tournament_url = i["value"]
+        if i["name"] == "tournament_id":
+            tournament_id = i["value"]
         if i["name"] == "division":
             division = i["value"]
 
-    tournament = _get_tournament(tournament_url)
+    tournament = _get_tournament(tournament_id)
 
     if "tournament" not in tournament:
-        return f":no_entry: Tournament with URL `{tournament_url}` not found"
+        return f":no_entry: Tournament with URL `{tournament_id}` not found"
 
     checked_in_teams = get_checked_in_teams(division)
 
-    existing_participants = _get_participants(tournament_url)
+    existing_participants = _get_participants(tournament_id)
     existing_participant_names = []
     if existing_participants:
         for participant in existing_participants:
@@ -108,8 +109,8 @@ def update_bracket(event):
         if team not in existing_participant_names:
             participants.append(team)
 
-    result = _add_bulk_participant(tournament_url, participants)
+    result = _add_bulk_participant(tournament_id, participants)
     if "errors" not in result:
-        return f":white_check_mark: Tournament `{tournament_url}` participants updated"
+        return f":white_check_mark: Tournament `{tournament_id}` participants updated"
     else:
-        return f":no_entry: Failed to update Tournament `{tournament_url}`: `{json.dumps(result)}`"
+        return f":no_entry: Failed to update Tournament `{tournament_id}`: `{json.dumps(result)}`"

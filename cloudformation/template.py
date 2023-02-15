@@ -2,9 +2,8 @@ from os import environ
 
 import awacs.awslambda as almb
 import awacs.ssm as assm
-from troposphere import Template, Parameter, GetAtt, Ref, Sub, ssm
-
 from resources import api_gateway_lambda, lambda_plus_layer
+from troposphere import GetAtt, Parameter, Ref, Sub, Template, ssm
 
 s3_layer_bucket = "s3-buckets-lambdalayerbucket-1wvx0gjtmchjj"
 lambda_name_prefix = "legion-td-discord-bot"
@@ -55,6 +54,15 @@ challonge_api_key = template.add_parameter(
     )
 )
 
+alert_webhook = template.add_parameter(
+    Parameter(
+        "AlertWebhook",
+        Description="Exception Alert Discord Webhook",
+        Type="String",
+        NoEcho=True,
+    )
+)
+
 # Resources
 checkin_status_param = template.add_resource(
     ssm.Parameter(
@@ -77,6 +85,7 @@ template, checkin_function_arn = lambda_plus_layer.add(
         "GOOGLE_API_KEY": Ref(google_api_key),
         "GOOGLE_SHEET_ID": Ref(google_sheet_id),
         "CHECKIN_STATUS_PARAM": Ref(checkin_status_param),
+        "ALERT_WEBHOOK": Ref(alert_webhook),
     },
     iam_permissions=[
         {
@@ -91,6 +100,22 @@ template, checkin_function_arn = lambda_plus_layer.add(
     ],
 )
 
+template, results_function_arn = lambda_plus_layer.add(
+    template,
+    s3_layer_bucket=s3_layer_bucket,
+    lambda_name=f"{lambda_name_prefix}-results",
+    local_path="../src/results",
+    lambda_runtime="python3.9",
+    lambda_vars={
+        "APPLICATION_ID": Ref(application_id),
+        "GOOGLE_API_KEY": Ref(google_api_key),
+        "GOOGLE_SHEET_ID": Ref(google_sheet_id),
+        "CHALLONGE_API_KEY": Ref(challonge_api_key),
+        "ALERT_WEBHOOK": Ref(alert_webhook),
+    },
+    iam_permissions=[],
+)
+
 template, manage_function_arn = lambda_plus_layer.add(
     template,
     s3_layer_bucket=s3_layer_bucket,
@@ -103,6 +128,7 @@ template, manage_function_arn = lambda_plus_layer.add(
         "CHALLONGE_API_KEY": Ref(challonge_api_key),
         "GOOGLE_API_KEY": Ref(google_api_key),
         "GOOGLE_SHEET_ID": Ref(google_sheet_id),
+        "ALERT_WEBHOOK": Ref(alert_webhook),
     },
     iam_permissions=[
         {
@@ -127,6 +153,8 @@ template, handler_function_arn = lambda_plus_layer.add(
         "DISCORD_PUBLIC_KEY": Ref(discord_public_key),
         "LAMBDA_CHECKIN": GetAtt(checkin_function_arn, "Arn"),
         "LAMBDA_MANAGE": GetAtt(manage_function_arn, "Arn"),
+        "LAMBDA_RESULTS": GetAtt(results_function_arn, "Arn"),
+        "ALERT_WEBHOOK": Ref(alert_webhook),
     },
     iam_permissions=[
         {
@@ -137,6 +165,11 @@ template, handler_function_arn = lambda_plus_layer.add(
         {
             "name": "invoke-manage-function",
             "resources": [GetAtt(manage_function_arn, "Arn")],
+            "actions": [almb.InvokeFunction],
+        },
+        {
+            "name": "invoke-results-function",
+            "resources": [GetAtt(results_function_arn, "Arn")],
             "actions": [almb.InvokeFunction],
         },
     ],

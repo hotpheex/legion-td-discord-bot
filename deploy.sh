@@ -25,7 +25,8 @@ function deploy_dev {
             -o DiscordPublicKey="f5f2ad3d28b06fb464d8e9ee6d3667e149392467341759d4811ee6996d2e918a" \
             -o GoogleApiKey="${GOOGLE_API_KEY}" \
             -o GoogleSheetId="1AwWaWBdKxYCSj6LLVZrsfI_zdo0gAqduvng_DkxmeE8" \
-            -o ChallongeApiKey="${CHALLONGE_API_KEY}"
+            -o ChallongeApiKey="${CHALLONGE_API_KEY}" \
+            -o AlertWebhook="${ALERT_WEBHOOK}"
 }
 
 function deploy_prod {
@@ -42,7 +43,8 @@ function deploy_prod {
             -o DiscordPublicKey="42be1d3d4136ed14b3a46a60bb11fe92c73c0d84be9337f3e6f11e21edf6e75d" \
             -o GoogleApiKey="${GOOGLE_API_KEY}" \
             -o GoogleSheetId="1Mi_J_r6vRcKU4AosO0-MGa9MnYX3Df22qchAUmQZVWk" \
-            -o ChallongeApiKey="${CHALLONGE_API_KEY}"
+            -o ChallongeApiKey="${CHALLONGE_API_KEY}" \
+            -o AlertWebhook="${ALERT_WEBHOOK}"
 }
 
 case "${1}" in

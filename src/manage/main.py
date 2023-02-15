@@ -3,18 +3,19 @@ Admin commands to manage tournaments
 """
 import json
 import logging
+import traceback
 from math import ceil
 from os import environ
 
 import boto3
 import challonge
-from requests import patch
-from requests.exceptions import RequestException
+from requests import patch, post
 
-logging.getLogger().setLevel(logging.DEBUG)
+logging.getLogger().setLevel(logging.INFO)
 
 CHECKIN_STATUS_PARAM = environ["CHECKIN_STATUS_PARAM"]
 APPLICATION_ID = environ["APPLICATION_ID"]
+ALERT_WEBHOOK = environ["ALERT_WEBHOOK"]
 
 
 def get_checkin_status(client):
@@ -71,10 +72,10 @@ def lambda_handler(event, context):
         response.raise_for_status()
         logging.info(response.status_code)
         logging.debug(response.json())
-
-    except RequestException as e:
-        logging.error(e)
     except Exception as e:
-        logging.error(e)
-
-    return True
+        logging.exception(e)
+        post(ALERT_WEBHOOK, json={"content": f"`{context.function_name} - {context.log_stream_name}`\n```{traceback.format_exc()}```"})
+        patch(
+            f"https://discord.com/api/webhooks/{APPLICATION_ID}/{event['token']}/messages/@original",
+            json={"content": ":warning: Command failed unexpectedly"},
+        )

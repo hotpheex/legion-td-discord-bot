@@ -54,6 +54,15 @@ challonge_api_key = template.add_parameter(
     )
 )
 
+alert_webhook = template.add_parameter(
+    Parameter(
+        "AlertWebhook",
+        Description="Exception Alert Discord Webhook",
+        Type="String",
+        NoEcho=True,
+    )
+)
+
 # Resources
 checkin_status_param = template.add_resource(
     ssm.Parameter(
@@ -76,6 +85,7 @@ template, checkin_function_arn = lambda_plus_layer.add(
         "GOOGLE_API_KEY": Ref(google_api_key),
         "GOOGLE_SHEET_ID": Ref(google_sheet_id),
         "CHECKIN_STATUS_PARAM": Ref(checkin_status_param),
+        "ALERT_WEBHOOK": Ref(alert_webhook),
     },
     iam_permissions=[
         {
@@ -101,6 +111,7 @@ template, results_function_arn = lambda_plus_layer.add(
         "GOOGLE_API_KEY": Ref(google_api_key),
         "GOOGLE_SHEET_ID": Ref(google_sheet_id),
         "CHALLONGE_API_KEY": Ref(challonge_api_key),
+        "ALERT_WEBHOOK": Ref(alert_webhook),
     },
     iam_permissions=[],
 )
@@ -117,6 +128,7 @@ template, manage_function_arn = lambda_plus_layer.add(
         "CHALLONGE_API_KEY": Ref(challonge_api_key),
         "GOOGLE_API_KEY": Ref(google_api_key),
         "GOOGLE_SHEET_ID": Ref(google_sheet_id),
+        "ALERT_WEBHOOK": Ref(alert_webhook),
     },
     iam_permissions=[
         {
@@ -142,6 +154,7 @@ template, handler_function_arn = lambda_plus_layer.add(
         "LAMBDA_CHECKIN": GetAtt(checkin_function_arn, "Arn"),
         "LAMBDA_MANAGE": GetAtt(manage_function_arn, "Arn"),
         "LAMBDA_RESULTS": GetAtt(results_function_arn, "Arn"),
+        "ALERT_WEBHOOK": Ref(alert_webhook),
     },
     iam_permissions=[
         {

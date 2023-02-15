@@ -5,12 +5,12 @@ import json
 import logging
 from base64 import b64decode
 from os import environ
+import traceback
 
 import boto3
 import gspread
 from constants import *
-from requests import patch
-from requests.exceptions import RequestException
+from requests import patch, post
 
 # Google SA setup: https://docs.gspread.org/en/latest/oauth2.html#for-bots-using-service-account
 
@@ -20,6 +20,7 @@ GOOGLE_API_KEY = environ["GOOGLE_API_KEY"]
 GOOGLE_SHEET_ID = environ["GOOGLE_SHEET_ID"]
 APPLICATION_ID = environ["APPLICATION_ID"]
 CHECKIN_STATUS_PARAM = environ["CHECKIN_STATUS_PARAM"]
+ALERT_WEBHOOK = environ["ALERT_WEBHOOK"]
 
 
 def find_name_in_divisions(sheet, query_name, query_column):
@@ -71,8 +72,6 @@ def checkin(event, checkin_status):
             return f":no_entry: Player `{player_name}` is not on team `{team_name}`\nPlease make sure your Discord nickname matches your in game name"
 
     if sub_command == "solo":
-        # if player_name.lower() != name_cell.value.lower():
-        #     return f":no_entry: Your nickname isn't `{name_cell.value}`!\nPlease make sure your Discord nickname matches your in game name"
         if checkin_status == "day_2":
             return f":no_entry: Solo players do not need to checkin on Day 2"
 
@@ -123,8 +122,10 @@ def lambda_handler(event, context):
         response.raise_for_status()
         logging.info(response.status_code)
         logging.debug(response.json())
-
-    except RequestException as e:
-        logging.error(e)
     except Exception as e:
-        logging.error(e)
+        logging.exception(e)
+        post(ALERT_WEBHOOK, json={"content": f"`{context.function_name} - {context.log_stream_name}`\n```{traceback.format_exc()}```"})
+        patch(
+            f"https://discord.com/api/webhooks/{APPLICATION_ID}/{event['token']}/messages/@original",
+            json={"content": ":warning: Command failed unexpectedly"},
+        )

@@ -1,18 +1,19 @@
 import json
 import logging
+import traceback
 from os import environ, replace
 from pathlib import Path
 
 import challonge
 from constants import *
-from requests import patch
-from requests.exceptions import RequestException
+from requests import patch, post
 
 logging.getLogger().setLevel(logging.INFO)
 
 GOOGLE_API_KEY = environ["GOOGLE_API_KEY"]
 GOOGLE_SHEET_ID = environ["GOOGLE_SHEET_ID"]
 APPLICATION_ID = environ["APPLICATION_ID"]
+ALERT_WEBHOOK = environ["ALERT_WEBHOOK"]
 
 
 def results(event, context, tournament_id):
@@ -25,10 +26,7 @@ def results(event, context, tournament_id):
     tournament_state = t["tournament"]["state"]
     if tournament_state == "pending":
         return f':no_entry: {t["tournament"]["name"]} has not started yet <https://challonge.com/{tournament_id}>'
-    elif (
-        tournament_state == "awaiting_review"
-        or tournament_state == "complete"
-    ):
+    elif tournament_state == "awaiting_review" or tournament_state == "complete":
         return f':no_entry: {t["tournament"]["name"]} has finished'
 
     # Random validations
@@ -54,8 +52,9 @@ def results(event, context, tournament_id):
     # Find winning team ID
     winning_team_id = None
     for p in participants:
-        if p["participant"]["name"] == winning_team:
+        if p["participant"]["name"].lower() == winning_team.lower():
             winning_team_id = p["participant"]["id"]
+            winning_team_name = p["participant"]["name"]
 
     if not winning_team_id:
         return f":no_entry: Team `{winning_team}` not found (<https://challonge.com/{tournament_id}>)"
@@ -79,9 +78,8 @@ def results(event, context, tournament_id):
             scores_csv = str(losing_score) + "-" + str(winning_score)
             losing_team_id = m["match"]["player1_id"]
 
-
     if not latest_match or not scores_csv:
-        return f":no_entry: No match in progress for {winning_team} (<https://challonge.com/{tournament_id}>)"
+        return f":no_entry: No match in progress for {winning_team_name} (<https://challonge.com/{tournament_id}>)"
 
     # Update match with scores
     challonge._update_match(
@@ -89,7 +87,7 @@ def results(event, context, tournament_id):
     )
 
     losing_team = challonge._get_participant(tournament_id, losing_team_id)
-    return f":white_check_mark: [Round {latest_match['match']['round']}] `{winning_team}` {winning_score}-{losing_score} `{losing_team['participant']['name']}`"
+    return f":white_check_mark: [Round {latest_match['match']['round']}] `{winning_team_name}` {winning_score}-{losing_score} `{losing_team['participant']['name']}`"
 
 
 def lambda_handler(event, context):
@@ -107,8 +105,15 @@ def lambda_handler(event, context):
         response.raise_for_status()
         logging.info(response.status_code)
         logging.debug(response.json())
-
-    except RequestException as e:
-        logging.error(e)
     except Exception as e:
-        logging.error(e)
+        logging.exception(e)
+        post(
+            ALERT_WEBHOOK,
+            json={
+                "content": f"`{context.function_name} - {context.log_stream_name}`\n```{traceback.format_exc()}```"
+            },
+        )
+        patch(
+            f"https://discord.com/api/webhooks/{APPLICATION_ID}/{event['token']}/messages/@original",
+            json={"content": ":warning: Command failed unexpectedly"},
+        )

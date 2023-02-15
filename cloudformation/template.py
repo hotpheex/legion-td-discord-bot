@@ -1,8 +1,6 @@
-from os import environ
-
 import awacs.awslambda as almb
 import awacs.ssm as assm
-from resources import api_gateway_lambda, lambda_plus_layer
+from resources import api_gateway_lambda, lambda_function
 from troposphere import GetAtt, Parameter, Ref, Sub, Template, ssm
 
 s3_layer_bucket = "s3-buckets-lambdalayerbucket-1wvx0gjtmchjj"
@@ -74,7 +72,7 @@ checkin_status_param = template.add_resource(
     )
 )
 
-template, checkin_function_arn = lambda_plus_layer.add(
+template, checkin_function_arn = lambda_function.add(
     template,
     s3_layer_bucket=s3_layer_bucket,
     lambda_name=f"{lambda_name_prefix}-checkin",
@@ -100,7 +98,7 @@ template, checkin_function_arn = lambda_plus_layer.add(
     ],
 )
 
-template, results_function_arn = lambda_plus_layer.add(
+template, results_function_arn = lambda_function.add(
     template,
     s3_layer_bucket=s3_layer_bucket,
     lambda_name=f"{lambda_name_prefix}-results",
@@ -116,7 +114,7 @@ template, results_function_arn = lambda_plus_layer.add(
     iam_permissions=[],
 )
 
-template, manage_function_arn = lambda_plus_layer.add(
+template, manage_function_arn = lambda_function.add(
     template,
     s3_layer_bucket=s3_layer_bucket,
     lambda_name=f"{lambda_name_prefix}-manage",
@@ -143,7 +141,7 @@ template, manage_function_arn = lambda_plus_layer.add(
     ],
 )
 
-template, handler_function_arn = lambda_plus_layer.add(
+template, handler_function_arn = lambda_function.add(
     template,
     s3_layer_bucket=s3_layer_bucket,
     lambda_name=f"{lambda_name_prefix}-handler",

@@ -13,6 +13,7 @@ from requests import patch, post
 
 logging.getLogger().setLevel(logging.INFO)
 
+
 CHECKIN_STATUS_PARAM = environ["CHECKIN_STATUS_PARAM"]
 APPLICATION_ID = environ["APPLICATION_ID"]
 ALERT_WEBHOOK = environ["ALERT_WEBHOOK"]
@@ -64,6 +65,8 @@ def lambda_handler(event, context):
             message = calculate_team_seed(event)
         elif sub_command == "update_bracket":
             message = challonge.update_bracket(event)
+        else:
+            raise Exception(f"{sub_command} is not a valid command")
 
         response = patch(
             f"https://discord.com/api/webhooks/{APPLICATION_ID}/{event['token']}/messages/@original",

@@ -1,9 +1,3 @@
-# from awacs.aws import Allow, PolicyDocument, Principal, Statement
-# import awacs.sts as asts
-# import awacs.ssm as assm
-# import awacs.logs as alogs
-# import awacs.elasticfilesystem as aefs
-
 import troposphere.apigateway as agw
 import troposphere.awslambda as lmb
 from troposphere import GetAtt, Output, Ref, Sub
@@ -50,8 +44,7 @@ def add(template, handler_function, stage_name):
             Principal="apigateway.amazonaws.com",
             SourceArn=Sub(
                 "arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${RestApiGateway}/*/POST/"
-            )
-            # arn:aws:execute-api:ap-southeast-2:220346651581:eg2aogc4kk/*/POST/event
+            ),
         )
     )
 

@@ -3,14 +3,13 @@ Admin commands to manage tournaments
 """
 import json
 import logging
-from os import environ
 from math import ceil
+from os import environ
 
 import boto3
+import challonge
 from requests import patch
 from requests.exceptions import RequestException
-
-import challonge
 
 logging.getLogger().setLevel(logging.DEBUG)
 
@@ -69,6 +68,7 @@ def lambda_handler(event, context):
             f"https://discord.com/api/webhooks/{APPLICATION_ID}/{event['token']}/messages/@original",
             json={"content": message},
         )
+        response.raise_for_status()
         logging.info(response.status_code)
         logging.debug(response.json())
 

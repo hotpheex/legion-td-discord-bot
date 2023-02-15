@@ -3,15 +3,14 @@ Handle checkin command
 """
 import json
 import logging
-from os import environ
 from base64 import b64decode
+from os import environ
 
 import boto3
 import gspread
+from constants import *
 from requests import patch
 from requests.exceptions import RequestException
-
-from constants import *
 
 # Google SA setup: https://docs.gspread.org/en/latest/oauth2.html#for-bots-using-service-account
 
@@ -121,6 +120,7 @@ def lambda_handler(event, context):
             f"https://discord.com/api/webhooks/{APPLICATION_ID}/{event['token']}/messages/@original",
             json={"content": message},
         )
+        response.raise_for_status()
         logging.info(response.status_code)
         logging.debug(response.json())
 

@@ -130,14 +130,14 @@ commands = [
                 "name": "winning_score",
                 "description": "Score of winning team",
                 "type": 4,
-                "required": True
+                "required": True,
             },
             {
                 "name": "losing_score",
                 "description": "Score of losing team",
                 "type": 4,
-                "required": True
-            }
+                "required": True,
+            },
         ],
     },
 ]

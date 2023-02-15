@@ -27,7 +27,7 @@ LAMBDA_RESULTS = os.environ["LAMBDA_RESULTS"]
 commands = {
     "checkin": LAMBDA_CHECKIN,
     "manage": LAMBDA_MANAGE,
-    "results": LAMBDA_RESULTS
+    "results": LAMBDA_RESULTS,
 }
 
 
@@ -69,10 +69,6 @@ def lambda_handler(event, context):
 
     if body["type"] == 2:
         command = body["data"]["name"]
-        # sub_command = body["data"]["options"][0]["name"]
-
-    # if body["type"] == 3: # if interaction is a form
-    #     command = body["data"]
 
     client = boto3.client("lambda")
 

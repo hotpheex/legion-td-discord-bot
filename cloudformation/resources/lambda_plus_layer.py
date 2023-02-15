@@ -1,9 +1,9 @@
 import subprocess
-from sys import executable
 from hashlib import sha512
-from shutil import make_archive, copytree
-from tempfile import TemporaryDirectory
 from os import path
+from shutil import copytree, make_archive
+from sys import executable
+from tempfile import TemporaryDirectory
 
 import awacs.logs as alog
 import awacs.sts as asts
@@ -62,7 +62,6 @@ def add(
     lambda_vars={},
     iam_permissions=[],
 ):
-
     lambda_code_hash = create_upload_deployment_archive(
         local_path, s3_layer_bucket, lambda_name
     )

@@ -2,9 +2,8 @@ from os import environ
 
 import awacs.awslambda as almb
 import awacs.ssm as assm
-from troposphere import Template, Parameter, GetAtt, Ref, Sub, ssm
-
 from resources import api_gateway_lambda, lambda_plus_layer
+from troposphere import GetAtt, Parameter, Ref, Sub, Template, ssm
 
 s3_layer_bucket = "s3-buckets-lambdalayerbucket-1wvx0gjtmchjj"
 lambda_name_prefix = "legion-td-discord-bot"
@@ -101,10 +100,9 @@ template, results_function_arn = lambda_plus_layer.add(
         "APPLICATION_ID": Ref(application_id),
         "GOOGLE_API_KEY": Ref(google_api_key),
         "GOOGLE_SHEET_ID": Ref(google_sheet_id),
-        "CHALLONGE_API_KEY": Ref(challonge_api_key)
+        "CHALLONGE_API_KEY": Ref(challonge_api_key),
     },
-    iam_permissions=[
-    ],
+    iam_permissions=[],
 )
 
 template, manage_function_arn = lambda_plus_layer.add(

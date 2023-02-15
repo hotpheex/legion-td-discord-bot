@@ -1,11 +1,10 @@
 import json
 import logging
-from os import environ
 from base64 import b64decode
+from os import environ
 
-import requests
 import gspread
-
+import requests
 from constants import *
 
 logging.getLogger().setLevel(logging.DEBUG)
@@ -29,6 +28,7 @@ def _get_tournament(tournament_id):
         params={"api_key": CHALLONGE_API_KEY},
         headers=HEADERS,
     )
+    res.raise_for_status()
     return res.json()
 
 
@@ -38,6 +38,7 @@ def _get_participants(tournament_id):
         params={"api_key": CHALLONGE_API_KEY},
         headers=HEADERS,
     )
+    res.raise_for_status()
     return res.json()
 
 
@@ -53,7 +54,7 @@ def _add_bulk_participant(tournament_id, names):
         data=data,
         headers=HEADERS,
     )
-
+    res.raise_for_status()
     return res.json()
 
 

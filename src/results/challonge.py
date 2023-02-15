@@ -1,5 +1,6 @@
-import requests
 from os import environ
+
+import requests
 
 BASE_URL = "https://api.challonge.com/v1"
 HEADERS = {
@@ -8,12 +9,23 @@ HEADERS = {
 CHALLONGE_API_KEY = environ["CHALLONGE_API_KEY"]
 
 
+def _get_tournament(tournament_id):
+    res = requests.get(
+        f"{BASE_URL}/tournaments/{tournament_id}.json",
+        params={"api_key": CHALLONGE_API_KEY},
+        headers=HEADERS,
+    )
+    res.raise_for_status()
+    return res.json()
+
+
 def _get_matches(tournament_id):
     res = requests.get(
         f"{BASE_URL}/tournaments/{tournament_id}/matches.json",
         params={"api_key": CHALLONGE_API_KEY},
         headers=HEADERS,
     )
+    res.raise_for_status()
     return res.json()
 
 
@@ -23,6 +35,7 @@ def _get_participant(tournament_id, participant_id):
         params={"api_key": CHALLONGE_API_KEY},
         headers=HEADERS,
     )
+    res.raise_for_status()
     return res.json()
 
 
@@ -32,6 +45,7 @@ def _get_participants(tournament_id):
         params={"api_key": CHALLONGE_API_KEY},
         headers=HEADERS,
     )
+    res.raise_for_status()
     return res.json()
 
 
@@ -47,4 +61,5 @@ def _update_match(tournament_id, match_id, winner_id, scores_csv):
         headers=HEADERS,
         data=data,
     )
+    res.raise_for_status()
     return res.json()

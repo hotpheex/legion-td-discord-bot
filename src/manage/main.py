@@ -1,6 +1,8 @@
 """
 Admin commands to manage tournaments
 """
+from sys import path
+path.append('..')
 import json
 import logging
 import traceback
@@ -8,15 +10,16 @@ from math import ceil
 from os import environ
 
 import boto3
-import challonge
+from libs.challonge import Challonge
 from requests import patch, post
 
-logging.getLogger().setLevel(logging.INFO)
+logging.getLogger().setLevel(logging.DEBUG)
 
 
 CHECKIN_STATUS_PARAM = environ["CHECKIN_STATUS_PARAM"]
 APPLICATION_ID = environ["APPLICATION_ID"]
 ALERT_WEBHOOK = environ["ALERT_WEBHOOK"]
+CHALLONGE_API_KEY = environ["CHALLONGE_API_KEY"]
 
 
 def get_checkin_status(client):
@@ -53,6 +56,8 @@ def lambda_handler(event, context):
     logging.debug(json.dumps(event))
 
     client = boto3.client("ssm")
+    challonge = Challonge(CHALLONGE_API_KEY)
+    print(challonge)
 
     try:
         sub_command = event["data"]["options"][0]["name"]

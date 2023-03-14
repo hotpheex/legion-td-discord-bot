@@ -4,7 +4,9 @@ import traceback
 from os import environ, replace
 from pathlib import Path
 
-import challonge
+# import challonge
+from ..libs import Challonge
+
 from constants import *
 from requests import patch, post
 
@@ -14,12 +16,15 @@ GOOGLE_API_KEY = environ["GOOGLE_API_KEY"]
 GOOGLE_SHEET_ID = environ["GOOGLE_SHEET_ID"]
 APPLICATION_ID = environ["APPLICATION_ID"]
 ALERT_WEBHOOK = environ["ALERT_WEBHOOK"]
+CHALLONGE_API_KEY = environ["CHALLONGE_API_KEY"]
 
 
 def results(event, context, tournament_id):
     winning_team = event["data"]["options"][0]["value"]
     winning_score = event["data"]["options"][1]["value"]
     losing_score = event["data"]["options"][2]["value"]
+
+    challonge = Challonge(CHALLONGE_API_KEY)
 
     # Check is tournament is running
     t = challonge._get_tournament(tournament_id)

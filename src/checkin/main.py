@@ -9,7 +9,7 @@ from os import environ
 
 import boto3
 import gspread
-from constants import *
+from ..libs.constants import *
 from requests import patch, post
 
 # Google SA setup: https://docs.gspread.org/en/latest/oauth2.html#for-bots-using-service-account

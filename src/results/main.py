@@ -1,14 +1,17 @@
+import sys
+
+sys.path.append('..')
+
 import json
 import logging
-import traceback
 from os import environ, replace
 from pathlib import Path
 
-# import challonge
-from ..libs import Challonge
 
 from constants import *
-from requests import patch, post
+
+from libs.challonge import Challonge
+from libs.discord import Discord
 
 logging.getLogger().setLevel(logging.INFO)
 
@@ -96,29 +99,15 @@ def results(event, context, tournament_id):
 
 
 def lambda_handler(event, context):
+    discord = Discord(APPLICATION_ID, event['token'])
+
     try:
         channel_id = event["channel_id"]
         tournament_id = CHANNEL_IDS[channel_id]
 
         message = results(event, context, tournament_id)
-        logging.info(f"MESSAGE: {message}")
-
-        response = patch(
-            f"https://discord.com/api/webhooks/{APPLICATION_ID}/{event['token']}/messages/@original",
-            json={"content": message},
-        )
-        response.raise_for_status()
-        logging.info(response.status_code)
-        logging.debug(response.json())
+        discord.message_response(message)
     except Exception as e:
         logging.exception(e)
-        post(
-            ALERT_WEBHOOK,
-            json={
-                "content": f"`{context.function_name} - {context.log_stream_name}`\n```{traceback.format_exc()}```"
-            },
-        )
-        patch(
-            f"https://discord.com/api/webhooks/{APPLICATION_ID}/{event['token']}/messages/@original",
-            json={"content": ":warning: Command failed unexpectedly"},
-        )
+        discord.exception_alert(ALERT_WEBHOOK, context)
+        discord.message_response(":warning: Command failed unexpectedly")

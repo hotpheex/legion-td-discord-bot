@@ -1,16 +1,19 @@
 """
 Handle checkin command
 """
+import sys
+
+sys.path.append('..')
 import json
 import logging
-import traceback
 from base64 import b64decode
 from os import environ
 
 import boto3
 import gspread
 from ..libs.constants import *
-from requests import patch, post
+
+from libs.discord import Discord
 
 # Google SA setup: https://docs.gspread.org/en/latest/oauth2.html#for-bots-using-service-account
 
@@ -99,6 +102,8 @@ def checkin(event, checkin_status):
 def lambda_handler(event, context):
     logging.debug(json.dumps(event))
 
+    discord = Discord(APPLICATION_ID, event['token'])
+
     try:
         # Checkin Status
         client = boto3.client("ssm")
@@ -113,24 +118,8 @@ def lambda_handler(event, context):
         else:
             message = checkin(event, checkin_status)
 
-        logging.info(f"MESSAGE: {message}")
-
-        response = patch(
-            f"https://discord.com/api/webhooks/{APPLICATION_ID}/{event['token']}/messages/@original",
-            json={"content": message},
-        )
-        response.raise_for_status()
-        logging.info(response.status_code)
-        logging.debug(response.json())
+        discord.message_response(message)
     except Exception as e:
         logging.exception(e)
-        post(
-            ALERT_WEBHOOK,
-            json={
-                "content": f"`{context.function_name} - {context.log_stream_name}`\n```{traceback.format_exc()}```"
-            },
-        )
-        patch(
-            f"https://discord.com/api/webhooks/{APPLICATION_ID}/{event['token']}/messages/@original",
-            json={"content": ":warning: Command failed unexpectedly"},
-        )
+        discord.exception_alert(ALERT_WEBHOOK, context)
+        discord.message_response(":warning: Command failed unexpectedly")

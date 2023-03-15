@@ -15,7 +15,7 @@ from nacl.exceptions import BadSignatureError
 from nacl.signing import VerifyKey
 from requests import post
 
-logging.getLogger().setLevel(logging.DEBUG)
+logging.getLogger().setLevel(logging.INFO)
 
 DISCORD_PUBLIC_KEY = environ["DISCORD_PUBLIC_KEY"]
 DISCORD_PING_PONG = {"statusCode": 200, "body": json.dumps({"type": 1})}

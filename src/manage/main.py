@@ -1,26 +1,29 @@
 """
 Admin commands to manage tournaments
 """
-from sys import path
-path.append('..')
+import sys
+
+sys.path.append('..')
+
 import json
 import logging
 import traceback
-from math import ceil
-from os import environ
+import math
+import os
 
 import boto3
+import requests
+
 from libs.challonge import Challonge
-from requests import patch, post
+from libs.discord import Discord
 
 logging.getLogger().setLevel(logging.DEBUG)
 
 
-CHECKIN_STATUS_PARAM = environ["CHECKIN_STATUS_PARAM"]
-APPLICATION_ID = environ["APPLICATION_ID"]
-ALERT_WEBHOOK = environ["ALERT_WEBHOOK"]
-CHALLONGE_API_KEY = environ["CHALLONGE_API_KEY"]
-
+CHECKIN_STATUS_PARAM = os.environ["CHECKIN_STATUS_PARAM"]
+APPLICATION_ID = os.environ["APPLICATION_ID"]
+ALERT_WEBHOOK = os.environ["ALERT_WEBHOOK"]
+CHALLONGE_API_KEY = os.environ["CHALLONGE_API_KEY"]
 
 def get_checkin_status(client):
     response = client.get_parameter(Name=CHECKIN_STATUS_PARAM)
@@ -47,7 +50,7 @@ def calculate_team_seed(event):
     for player in event["data"]["options"][0]["options"]:
         ratings.append(player["value"])
 
-    team_rating = ceil((2 * max(ratings) + min(ratings)) / 3)
+    team_rating = math.ceil((2 * max(ratings) + min(ratings)) / 3)
 
     return f"Team rating for `{ratings}`: `{team_rating}`"
 
@@ -57,7 +60,7 @@ def lambda_handler(event, context):
 
     client = boto3.client("ssm")
     challonge = Challonge(CHALLONGE_API_KEY)
-    print(challonge)
+    discord = Discord(APPLICATION_ID, event['token'])
 
     try:
         sub_command = event["data"]["options"][0]["name"]
@@ -73,22 +76,8 @@ def lambda_handler(event, context):
         else:
             raise Exception(f"{sub_command} is not a valid command")
 
-        response = patch(
-            f"https://discord.com/api/webhooks/{APPLICATION_ID}/{event['token']}/messages/@original",
-            json={"content": message},
-        )
-        response.raise_for_status()
-        logging.info(response.status_code)
-        logging.debug(response.json())
+        discord.message_response(message)
     except Exception as e:
         logging.exception(e)
-        post(
-            ALERT_WEBHOOK,
-            json={
-                "content": f"`{context.function_name} - {context.log_stream_name}`\n```{traceback.format_exc()}```"
-            },
-        )
-        patch(
-            f"https://discord.com/api/webhooks/{APPLICATION_ID}/{event['token']}/messages/@original",
-            json={"content": ":warning: Command failed unexpectedly"},
-        )
+        discord.exception_alert(ALERT_WEBHOOK, context)
+        discord.message_response(":warning: Command failed unexpectedly")

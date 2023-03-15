@@ -64,7 +64,7 @@ def create_upload_deployment_archive(local_path, s3_layer_bucket, lambda_name):
                 "-m",
                 "pip",
                 "install",
-                "--ignore-installed",
+                "--upgrade",
                 "--target",
                 f"build/{lambda_name}/archive",
                 "-r",

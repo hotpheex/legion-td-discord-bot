@@ -1,9 +1,10 @@
 import subprocess
 from hashlib import sha512
 from os import path
-from shutil import copytree, make_archive
+from shutil import copytree, copyfile, make_archive
 from sys import executable
-from tempfile import TemporaryDirectory
+
+# from tempfile import TemporaryDirectory
 
 import awacs.logs as alog
 import awacs.sts as asts
@@ -56,6 +57,7 @@ from troposphere import GetAtt, Sub
 def create_upload_deployment_archive(local_path, s3_layer_bucket, lambda_name):
     copytree(local_path, f"build/{lambda_name}/archive/handler", dirs_exist_ok=True)
     copytree("../src/libs", f"build/{lambda_name}/archive/libs", dirs_exist_ok=True)
+    copyfile("../src/run.py", f"build/{lambda_name}/archive/run.py")
 
     if path.exists(f"build/{lambda_name}/archive/handler/requirements.txt"):
         subprocess.check_call(
@@ -96,7 +98,6 @@ def add(
     s3_layer_bucket,
     lambda_name,
     local_path,
-    lambda_runtime,
     lambda_timeout=180,
     lambda_vars={},
     iam_permissions=[],
@@ -168,9 +169,9 @@ def add(
             ),
             Description=Sub(f"${{AWS::StackName}} {lambda_name} Function"),
             Environment=lmd.Environment(Variables=lambda_vars),
-            Handler=f"handler/main.lambda_handler",
+            Handler=f"run.lambda_handler",
             Role=GetAtt(iam_lambda_execution_role, "Arn"),
-            Runtime=lambda_runtime,
+            Runtime="python3.9",
             Timeout=lambda_timeout,
         )
     )

@@ -1,29 +1,31 @@
 """
 Admin commands to manage tournaments
 """
-import sys
-
-sys.path.append('..')
-
 import json
 import logging
-import traceback
 import math
 import os
 
 import boto3
-import requests
 
+from libs.constants import *
 from libs.challonge import Challonge
 from libs.discord import Discord
+from libs.gsheets import GoogleSheet
 
-logging.getLogger().setLevel(logging.DEBUG)
 
+if os.getenv("DEBUG") == "true":
+    logging.getLogger().setLevel(logging.DEBUG)
+else:
+    logging.getLogger().setLevel(logging.INFO)
 
 CHECKIN_STATUS_PARAM = os.environ["CHECKIN_STATUS_PARAM"]
 APPLICATION_ID = os.environ["APPLICATION_ID"]
 ALERT_WEBHOOK = os.environ["ALERT_WEBHOOK"]
 CHALLONGE_API_KEY = os.environ["CHALLONGE_API_KEY"]
+GOOGLE_API_KEY = os.environ["GOOGLE_API_KEY"]
+GOOGLE_SHEET_ID = os.environ["GOOGLE_SHEET_ID"]
+
 
 def get_checkin_status(client):
     response = client.get_parameter(Name=CHECKIN_STATUS_PARAM)
@@ -55,12 +57,15 @@ def calculate_team_seed(event):
     return f"Team rating for `{ratings}`: `{team_rating}`"
 
 
-def lambda_handler(event, context):
+def run(event, context):
     logging.debug(json.dumps(event))
 
     client = boto3.client("ssm")
     challonge = Challonge(CHALLONGE_API_KEY)
-    discord = Discord(APPLICATION_ID, event['token'])
+    discord = Discord(APPLICATION_ID, event["token"])
+    gsheet = GoogleSheet(
+        GOOGLE_API_KEY, GOOGLE_SHEET_ID, CHANNEL_IDS[event["channel_id"]]
+    )
 
     try:
         sub_command = event["data"]["options"][0]["name"]
@@ -72,7 +77,7 @@ def lambda_handler(event, context):
         elif sub_command == "calculate_seed":
             message = calculate_team_seed(event)
         elif sub_command == "update_bracket":
-            message = challonge.update_bracket(event)
+            message = challonge.update_bracket(event, gsheet.get_checked_in_teams())
         else:
             raise Exception(f"{sub_command} is not a valid command")
 

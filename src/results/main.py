@@ -1,25 +1,28 @@
-import sys
-
-sys.path.append('..')
-
+"""
+Commands for players to self report results
+"""
 import json
 import logging
-from os import environ, replace
+import os
 from pathlib import Path
 
 
-from constants import *
+from libs.constants import *
 
 from libs.challonge import Challonge
 from libs.discord import Discord
 
-logging.getLogger().setLevel(logging.INFO)
 
-GOOGLE_API_KEY = environ["GOOGLE_API_KEY"]
-GOOGLE_SHEET_ID = environ["GOOGLE_SHEET_ID"]
-APPLICATION_ID = environ["APPLICATION_ID"]
-ALERT_WEBHOOK = environ["ALERT_WEBHOOK"]
-CHALLONGE_API_KEY = environ["CHALLONGE_API_KEY"]
+if os.getenv("DEBUG") == "true":
+    logging.getLogger().setLevel(logging.DEBUG)
+else:
+    logging.getLogger().setLevel(logging.INFO)
+
+GOOGLE_API_KEY = os.environ["GOOGLE_API_KEY"]
+GOOGLE_SHEET_ID = os.environ["GOOGLE_SHEET_ID"]
+APPLICATION_ID = os.environ["APPLICATION_ID"]
+ALERT_WEBHOOK = os.environ["ALERT_WEBHOOK"]
+CHALLONGE_API_KEY = os.environ["CHALLONGE_API_KEY"]
 
 
 def results(event, context, tournament_id):
@@ -52,7 +55,7 @@ def results(event, context, tournament_id):
         with open(f"/tmp/{tournament_id}-{context.aws_request_id}.json", "w") as fh:
             json.dump(participants, fh)
             fh.flush()
-        replace(
+        os.replace(
             f"/tmp/{tournament_id}-{context.aws_request_id}.json",
             f"/tmp/{tournament_id}.json",
         )
@@ -98,8 +101,10 @@ def results(event, context, tournament_id):
     return f":white_check_mark: [Round {latest_match['match']['round']}] `{winning_team_name}` {winning_score}-{losing_score} `{losing_team['participant']['name']}`"
 
 
-def lambda_handler(event, context):
-    discord = Discord(APPLICATION_ID, event['token'])
+def run(event, context):
+    logging.debug(json.dumps(event))
+
+    discord = Discord(APPLICATION_ID, event["token"])
 
     try:
         channel_id = event["channel_id"]

@@ -21,6 +21,7 @@ function deploy_dev {
       realestate/stackup:latest \
           legion-td-discord-bot-development up \
             -t template.yaml \
+            -o EnableDebug="true" \
             -o DiscordApplicationId="1058247991867219990" \
             -o DiscordPublicKey="f5f2ad3d28b06fb464d8e9ee6d3667e149392467341759d4811ee6996d2e918a" \
             -o GoogleApiKey="${GOOGLE_API_KEY}" \

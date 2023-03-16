@@ -24,6 +24,8 @@ COLORS = {
     },
 }
 CHECKED_IN_MSG = "Checked In"
+
+# Division channels
 CHANNEL_IDS = {
     "935116296587202632": "Division 4",
     "935116039400857620": "Division 3",
@@ -32,3 +34,12 @@ CHANNEL_IDS = {
 }
 CHANNEL_IDS["1019583590234849320"] = "Division 4"  # manage-bot channel
 CHANNEL_IDS["1023401872750547014"] = "Division 4"  # My bot-test Channel
+
+# Results channels
+RESULTS_CHANNEL_IDS = {
+    "935117175767830568": "February2023NovaCupDivision4",
+    "935117141592645632": "February2023NovaCupDivision3",
+    "935117112500948992": "February2023NovaCupDivision2",
+    "935117082931109918": "February2023NovaCupDivision1",
+}
+RESULTS_CHANNEL_IDS["1023401872750547014"] = "BotTestLTD2" # My bot-test Channel

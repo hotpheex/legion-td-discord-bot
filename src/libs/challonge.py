@@ -78,21 +78,19 @@ class Challonge:
         return res.json()
 
     
-    def update_bracket(self, event):
+    def update_bracket(self, event, checked_in_teams):
         for i in event["data"]["options"][0]["options"]:
             if i["name"] == "tournament_id":
                 tournament_id = i["value"]
             if i["name"] == "division":
                 division = i["value"]
 
-        tournament = _get_tournament(tournament_id)
+        tournament = self._get_tournament(tournament_id)
 
         if "tournament" not in tournament:
             return f":no_entry: Tournament with URL `{tournament_id}` not found"
 
-        checked_in_teams = get_checked_in_teams(division)
-
-        existing_participants = _get_participants(tournament_id)
+        existing_participants = self._get_participants(tournament_id)
         existing_participant_names = []
         if existing_participants:
             for participant in existing_participants:

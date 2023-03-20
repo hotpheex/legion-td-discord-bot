@@ -1,5 +1,6 @@
-.vscode
-__pycache__
-
 cloudformation/template.yaml
+cloudformation/build
 creds.sh
+.vscode
+.pytest_cache
+__pycache__

@@ -9,6 +9,12 @@ awacs = "*"
 boto3 = "*"
 
 [dev-packages]
+pytest = "*"
+pytest-mock = "*"
+pynacl = "*"
+requests = "*"
+gspread = "*"
+pytest-env = "*"
 
 [requires]
 python_version = "3.9"

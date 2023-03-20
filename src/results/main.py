@@ -1,25 +1,36 @@
+"""
+Commands for players to self report results
+"""
 import json
 import logging
-import traceback
-from os import environ, replace
+import os
 from pathlib import Path
 
-import challonge
-from constants import *
-from requests import patch, post
 
-logging.getLogger().setLevel(logging.INFO)
+from libs.constants import *
 
-GOOGLE_API_KEY = environ["GOOGLE_API_KEY"]
-GOOGLE_SHEET_ID = environ["GOOGLE_SHEET_ID"]
-APPLICATION_ID = environ["APPLICATION_ID"]
-ALERT_WEBHOOK = environ["ALERT_WEBHOOK"]
+from libs.challonge import Challonge
+from libs.discord import Discord
+
+
+if os.getenv("DEBUG") == "true":
+    logging.getLogger().setLevel(logging.DEBUG)
+else:
+    logging.getLogger().setLevel(logging.INFO)
+
+GOOGLE_API_KEY = os.environ["GOOGLE_API_KEY"]
+GOOGLE_SHEET_ID = os.environ["GOOGLE_SHEET_ID"]
+APPLICATION_ID = os.environ["APPLICATION_ID"]
+ALERT_WEBHOOK = os.environ["ALERT_WEBHOOK"]
+CHALLONGE_API_KEY = os.environ["CHALLONGE_API_KEY"]
 
 
 def results(event, context, tournament_id):
     winning_team = event["data"]["options"][0]["value"]
     winning_score = event["data"]["options"][1]["value"]
     losing_score = event["data"]["options"][2]["value"]
+
+    challonge = Challonge(CHALLONGE_API_KEY)
 
     # Check is tournament is running
     t = challonge._get_tournament(tournament_id)
@@ -44,7 +55,7 @@ def results(event, context, tournament_id):
         with open(f"/tmp/{tournament_id}-{context.aws_request_id}.json", "w") as fh:
             json.dump(participants, fh)
             fh.flush()
-        replace(
+        os.replace(
             f"/tmp/{tournament_id}-{context.aws_request_id}.json",
             f"/tmp/{tournament_id}.json",
         )
@@ -90,30 +101,18 @@ def results(event, context, tournament_id):
     return f":white_check_mark: [Round {latest_match['match']['round']}] `{winning_team_name}` {winning_score}-{losing_score} `{losing_team['participant']['name']}`"
 
 
-def lambda_handler(event, context):
+def run(event, context):
+    logging.debug(json.dumps(event))
+
+    discord = Discord(APPLICATION_ID, event["token"])
+
     try:
         channel_id = event["channel_id"]
         tournament_id = CHANNEL_IDS[channel_id]
 
         message = results(event, context, tournament_id)
-        logging.info(f"MESSAGE: {message}")
-
-        response = patch(
-            f"https://discord.com/api/webhooks/{APPLICATION_ID}/{event['token']}/messages/@original",
-            json={"content": message},
-        )
-        response.raise_for_status()
-        logging.info(response.status_code)
-        logging.debug(response.json())
+        discord.message_response(message)
     except Exception as e:
         logging.exception(e)
-        post(
-            ALERT_WEBHOOK,
-            json={
-                "content": f"`{context.function_name} - {context.log_stream_name}`\n```{traceback.format_exc()}```"
-            },
-        )
-        patch(
-            f"https://discord.com/api/webhooks/{APPLICATION_ID}/{event['token']}/messages/@original",
-            json={"content": ":warning: Command failed unexpectedly"},
-        )
+        discord.exception_alert(ALERT_WEBHOOK, context)
+        discord.message_response(":warning: Command failed unexpectedly")

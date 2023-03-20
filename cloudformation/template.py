@@ -10,6 +10,15 @@ template = Template()
 template.set_version("2010-09-09")
 
 # Parameters
+debug = template.add_parameter(
+    Parameter(
+        "EnableDebug",
+        Description="Enable debug logging",
+        Type="String",
+        Default="false",
+    )
+)
+
 application_id = template.add_parameter(
     Parameter(
         "DiscordApplicationId",
@@ -77,8 +86,8 @@ template, checkin_function_arn = lambda_function.add(
     s3_layer_bucket=s3_layer_bucket,
     lambda_name=f"{lambda_name_prefix}-checkin",
     local_path="../src/checkin",
-    lambda_runtime="python3.9",
     lambda_vars={
+        "DEBUG": Ref(debug),
         "APPLICATION_ID": Ref(application_id),
         "GOOGLE_API_KEY": Ref(google_api_key),
         "GOOGLE_SHEET_ID": Ref(google_sheet_id),
@@ -103,8 +112,8 @@ template, results_function_arn = lambda_function.add(
     s3_layer_bucket=s3_layer_bucket,
     lambda_name=f"{lambda_name_prefix}-results",
     local_path="../src/results",
-    lambda_runtime="python3.9",
     lambda_vars={
+        "DEBUG": Ref(debug),
         "APPLICATION_ID": Ref(application_id),
         "GOOGLE_API_KEY": Ref(google_api_key),
         "GOOGLE_SHEET_ID": Ref(google_sheet_id),
@@ -119,8 +128,8 @@ template, manage_function_arn = lambda_function.add(
     s3_layer_bucket=s3_layer_bucket,
     lambda_name=f"{lambda_name_prefix}-manage",
     local_path="../src/manage",
-    lambda_runtime="python3.9",
     lambda_vars={
+        "DEBUG": Ref(debug),
         "APPLICATION_ID": Ref(application_id),
         "CHECKIN_STATUS_PARAM": Ref(checkin_status_param),
         "CHALLONGE_API_KEY": Ref(challonge_api_key),
@@ -146,8 +155,8 @@ template, handler_function_arn = lambda_function.add(
     s3_layer_bucket=s3_layer_bucket,
     lambda_name=f"{lambda_name_prefix}-handler",
     local_path="../src/handler",
-    lambda_runtime="python3.9",
     lambda_vars={
+        "DEBUG": Ref(debug),
         "DISCORD_PUBLIC_KEY": Ref(discord_public_key),
         "LAMBDA_CHECKIN": GetAtt(checkin_function_arn, "Arn"),
         "LAMBDA_MANAGE": GetAtt(manage_function_arn, "Arn"),

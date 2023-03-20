@@ -1,9 +1,10 @@
 import subprocess
 from hashlib import sha512
 from os import path
-from shutil import copytree, make_archive
+from shutil import copytree, copyfile, make_archive
 from sys import executable
-from tempfile import TemporaryDirectory
+
+# from tempfile import TemporaryDirectory
 
 import awacs.logs as alog
 import awacs.sts as asts
@@ -15,39 +16,79 @@ from botocore.exceptions import ClientError
 from troposphere import GetAtt, Sub
 
 
+# def create_upload_deployment_archive(local_path, s3_layer_bucket, lambda_name):
+#     with TemporaryDirectory() as tmpdir:
+#         copytree(local_path, f"{tmpdir}/archive/handler")
+#         copytree("../src/libs", f"{tmpdir}/archive/libs")
+
+#         if path.exists(f"{tmpdir}/archive/handler/requirements.txt"):
+#             subprocess.check_call(
+#                 [
+#                     executable,
+#                     "-m",
+#                     "pip",
+#                     "install",
+#                     "--target",
+#                     f"{tmpdir}/archive",
+#                     "-r",
+#                     f"{tmpdir}/archive/handler/requirements.txt",
+#                 ]
+#             )
+
+#         make_archive(f"{tmpdir}/archive", "zip", f"{tmpdir}/archive")
+
+#         with open(f"{tmpdir}/archive.zip", "rb") as fh:
+#             lambda_code_hash = sha512(fh.read()).hexdigest()[:10]
+
+#         s3_client = boto3.client("s3")
+#         try:
+#             s3_client.upload_file(
+#                 f"{tmpdir}/archive.zip",
+#                 s3_layer_bucket,
+#                 f"{lambda_name}/archive-{lambda_code_hash}.zip",
+#             )
+#         except ClientError as e:
+#             raise SystemExit(e)
+#         print(f"{lambda_name}/archive-{lambda_code_hash}.zip Uploaded...")
+
+#     return lambda_code_hash
+
+
 def create_upload_deployment_archive(local_path, s3_layer_bucket, lambda_name):
-    with TemporaryDirectory() as tmpdir:
-        copytree(local_path, f"{tmpdir}/archive")
+    copytree(local_path, f"build/{lambda_name}/archive/handler", dirs_exist_ok=True)
+    copytree("../src/libs", f"build/{lambda_name}/archive/libs", dirs_exist_ok=True)
+    copyfile("../src/run.py", f"build/{lambda_name}/archive/run.py")
 
-        if path.exists(f"{tmpdir}/archive/requirements.txt"):
-            subprocess.check_call(
-                [
-                    executable,
-                    "-m",
-                    "pip",
-                    "install",
-                    "--target",
-                    f"{tmpdir}/archive",
-                    "-r",
-                    f"{tmpdir}/archive/requirements.txt",
-                ]
-            )
+    if path.exists(f"build/{lambda_name}/archive/handler/requirements.txt"):
+        subprocess.check_call(
+            [
+                executable,
+                "-m",
+                "pip",
+                "install",
+                "--upgrade",
+                "--target",
+                f"build/{lambda_name}/archive",
+                "-r",
+                f"build/{lambda_name}/archive/handler/requirements.txt",
+            ]
+        )
 
-        make_archive(f"{tmpdir}/archive", "zip", f"{tmpdir}/archive")
+    make_archive(f"build/{lambda_name}/archive", "zip", f"build/{lambda_name}/archive")
 
-        with open(f"{tmpdir}/archive.zip", "rb") as fh:
-            lambda_code_hash = sha512(fh.read()).hexdigest()[:10]
+    with open(f"build/{lambda_name}/archive.zip", "rb") as fh:
+        lambda_code_hash = sha512(fh.read()).hexdigest()[:10]
 
-        s3_client = boto3.client("s3")
-        try:
-            s3_client.upload_file(
-                f"{tmpdir}/archive.zip",
-                s3_layer_bucket,
-                f"{lambda_name}/archive-{lambda_code_hash}.zip",
-            )
-        except ClientError as e:
-            raise SystemExit(e)
-        print(f"{lambda_name}/archive-{lambda_code_hash}.zip Uploaded...")
+    s3_client = boto3.client("s3")
+    try:
+        s3_client.upload_file(
+            f"build/{lambda_name}/archive.zip",
+            s3_layer_bucket,
+            f"{lambda_name}/archive-{lambda_code_hash}.zip",
+        )
+    except ClientError as e:
+        raise SystemExit(e)
+    print(f"{lambda_name}/archive-{lambda_code_hash}.zip Uploaded...")
 
     return lambda_code_hash
 
@@ -57,7 +98,6 @@ def add(
     s3_layer_bucket,
     lambda_name,
     local_path,
-    lambda_runtime,
     lambda_timeout=180,
     lambda_vars={},
     iam_permissions=[],
@@ -129,9 +169,9 @@ def add(
             ),
             Description=Sub(f"${{AWS::StackName}} {lambda_name} Function"),
             Environment=lmd.Environment(Variables=lambda_vars),
-            Handler=f"main.lambda_handler",
+            Handler=f"run.lambda_handler",
             Role=GetAtt(iam_lambda_execution_role, "Arn"),
-            Runtime=lambda_runtime,
+            Runtime="python3.9",
             Timeout=lambda_timeout,
         )
     )

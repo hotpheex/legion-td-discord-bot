@@ -69,31 +69,31 @@ commands = [
                 "description": "Current Tournament Checkin Status",
                 "type": 1,
             },
-            {
-                "name": "update_bracket",
-                "description": "Update participants in a bracket",
-                "type": 1,
-                "options": [
-                    {
-                        "name": "tournament_id",
-                        "description": "Tournament URL / ID",
-                        "type": 3,
-                        "required": True,
-                    },
-                    {
-                        "name": "division",
-                        "description": "Choose a Division",
-                        "type": 3,
-                        "required": True,
-                        "choices": [
-                            {"name": "Division 1", "value": "Division 1"},
-                            {"name": "Division 2", "value": "Division 2"},
-                            {"name": "Division 3", "value": "Division 3"},
-                            {"name": "Division 4", "value": "Division 4"},
-                        ],
-                    },
-                ],
-            },
+            # {
+            #     "name": "update_bracket",
+            #     "description": "Update participants in a bracket",
+            #     "type": 1,
+            #     "options": [
+            #         {
+            #             "name": "tournament_id",
+            #             "description": "Tournament URL / ID",
+            #             "type": 3,
+            #             "required": True,
+            #         },
+            #         {
+            #             "name": "division",
+            #             "description": "Choose a Division",
+            #             "type": 3,
+            #             "required": True,
+            #             "choices": [
+            #                 {"name": "Division 1", "value": "Division 1"},
+            #                 {"name": "Division 2", "value": "Division 2"},
+            #                 {"name": "Division 3", "value": "Division 3"},
+            #                 {"name": "Division 4", "value": "Division 4"},
+            #             ],
+            #         },
+            #     ],
+            # },
             {
                 "name": "calculate_seed",
                 "description": "Calculate a Team Seed for two players",
@@ -111,6 +111,19 @@ commands = [
                         "type": 4,
                         "required": True,
                     },
+                ],
+            },
+            {
+                "name": "sort_signups",
+                "description": "Sort checked-in signups into Divisions",
+                "type": 1,
+                "options": [
+                    {
+                        "name": "confirm",
+                        "description": "Are you sure?",
+                        "type": 5,
+                        "required": True,
+                    }
                 ],
             },
         ],

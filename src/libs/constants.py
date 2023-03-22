@@ -6,9 +6,9 @@ COLUMNS = {
         "day_1_range": "A",
     },
     "solo": {
-        "name": 8,
-        "day_1": 10,
-        "day_1_range": "H",
+        "name": 9,
+        "day_1": 11,
+        "day_1_range": "I",
     },
 }
 COLORS = {
@@ -24,6 +24,7 @@ COLORS = {
     },
 }
 CHECKED_IN_MSG = "Checked In"
+SIGNUP_SHEET = "Sign-up"
 
 # Division channels
 CHANNEL_IDS = {
@@ -32,8 +33,10 @@ CHANNEL_IDS = {
     "935116039400857620": "Division 3",
     "935116002000240680": "Division 2",
     "935115970945613884": "Division 1",
+    "1086242748388098150": "Sign-up",
 }
 CHANNEL_IDS["1019583590234849320"] = "Division 5"  # manage-bot channel
+CHANNEL_IDS["1023401872750547014"] = "Division 5"  # My bot-test Channel
 
 # Results channels
 RESULTS_CHANNEL_IDS = {
@@ -43,4 +46,4 @@ RESULTS_CHANNEL_IDS = {
     "935117112500948992": "March2023NovaCupDivision2",
     "935117082931109918": "March2023NovaCupDivision1",
 }
-RESULTS_CHANNEL_IDS["1023401872750547014"] = "BotTestLTD2"  # My bot-test Channel
+RESULTS_CHANNEL_IDS["1023401872750547014"] = "86ks20nc"  # My bot-test Channel

@@ -108,7 +108,7 @@ def run(event, context):
 
     try:
         channel_id = event["channel_id"]
-        tournament_id = CHANNEL_IDS[channel_id]
+        tournament_id = RESULTS_CHANNEL_IDS[channel_id]
 
         message = results(event, context, tournament_id)
         discord.message_response(message)

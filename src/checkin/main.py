@@ -33,7 +33,8 @@ def checkin(event, checkin_status):
     if sub_command == "team":
         team_name = event["data"]["options"][0]["options"][0]["value"]
 
-    gsheet = GoogleSheet(GOOGLE_API_KEY, GOOGLE_SHEET_ID, CHANNEL_IDS[channel_id])
+    # gsheet = GoogleSheet(GOOGLE_API_KEY, GOOGLE_SHEET_ID, CHANNEL_IDS[channel_id])
+    gsheet = GoogleSheet(GOOGLE_API_KEY, GOOGLE_SHEET_ID, SIGNUP_SHEET)
 
     query_column = COLUMNS[sub_command]["name"]
 
@@ -49,11 +50,12 @@ def checkin(event, checkin_status):
         query=query_name, case_sensitive=False, in_column=query_column
     )
     if not name_cell:
-        division = gsheet.search_player_all_divs(query_name, query_column)
-        if division:
-            return f":no_entry: `{query_name}` is registered in {division}"
-        else:
-            return f":no_entry: `{query_name}` not found in {CHANNEL_IDS[channel_id]}\nPlease make sure your Discord nickname matches your in game name"
+        return f":no_entry: `{query_name}` not found on signup sheet\nPlease make sure your Discord nickname matches your in game name"
+        # division = gsheet.search_player_all_divs(query_name, query_column)
+        # if division:
+        #     return f":no_entry: `{query_name}` is registered in {division}"
+        # else:
+        #     return f":no_entry: `{query_name}` not found in {CHANNEL_IDS[channel_id]}\nPlease make sure your Discord nickname matches your in game name"
 
     if sub_command == "team":
         if not gsheet.worksheet.find(
@@ -103,8 +105,8 @@ def run(event, context):
 
         if checkin_status == "disabled":
             message = f":no_entry: Tournament checkins are not currently open"
-        elif event["channel_id"] not in CHANNEL_IDS:
-            message = f":no_entry: `/checkin` not supported in this channel"
+        # elif event["channel_id"] not in CHANNEL_IDS:
+        #     message = f":no_entry: `/checkin` not supported in this channel"
         else:
             message = checkin(event, checkin_status)
 

@@ -38,20 +38,20 @@ from troposphere import GetAtt, Sub
 #         make_archive(f"{tmpdir}/archive", "zip", f"{tmpdir}/archive")
 
 #         with open(f"{tmpdir}/archive.zip", "rb") as fh:
-#             lambda_code_hash = sha512(fh.read()).hexdigest()[:10]
+#             archive_hash = sha512(fh.read()).hexdigest()[:10]
 
 #         s3_client = boto3.client("s3")
 #         try:
 #             s3_client.upload_file(
 #                 f"{tmpdir}/archive.zip",
 #                 s3_layer_bucket,
-#                 f"{lambda_name}/archive-{lambda_code_hash}.zip",
+#                 f"{lambda_name}/archive-{archive_hash}.zip",
 #             )
 #         except ClientError as e:
 #             raise SystemExit(e)
-#         print(f"{lambda_name}/archive-{lambda_code_hash}.zip Uploaded...")
+#         print(f"{lambda_name}/archive-{archive_hash}.zip Uploaded...")
 
-#     return lambda_code_hash
+#     return archive_hash
 
 
 def create_upload_deployment_archive(local_path, s3_layer_bucket, lambda_name):
@@ -77,20 +77,20 @@ def create_upload_deployment_archive(local_path, s3_layer_bucket, lambda_name):
     make_archive(f"build/{lambda_name}/archive", "zip", f"build/{lambda_name}/archive")
 
     with open(f"build/{lambda_name}/archive.zip", "rb") as fh:
-        lambda_code_hash = sha512(fh.read()).hexdigest()[:10]
+        archive_hash = sha512(fh.read()).hexdigest()[:10]
 
     s3_client = boto3.client("s3")
     try:
         s3_client.upload_file(
             f"build/{lambda_name}/archive.zip",
             s3_layer_bucket,
-            f"{lambda_name}/archive-{lambda_code_hash}.zip",
+            f"{lambda_name}/archive-{archive_hash}.zip",
         )
     except ClientError as e:
         raise SystemExit(e)
-    print(f"{lambda_name}/archive-{lambda_code_hash}.zip Uploaded...")
+    print(f"{lambda_name}/archive-{archive_hash}.zip Uploaded...")
 
-    return lambda_code_hash
+    return archive_hash
 
 
 def add(
@@ -102,7 +102,7 @@ def add(
     lambda_vars={},
     iam_permissions=[],
 ):
-    lambda_code_hash = create_upload_deployment_archive(
+    archive_hash = create_upload_deployment_archive(
         local_path, s3_layer_bucket, lambda_name
     )
 
@@ -165,7 +165,7 @@ def add(
             f"{cfn_name}LambdaFunction",
             Code=lmd.Code(
                 S3Bucket=s3_layer_bucket,
-                S3Key=f"{lambda_name}/archive-{lambda_code_hash}.zip",
+                S3Key=f"{lambda_name}/archive-{archive_hash}.zip",
             ),
             Description=Sub(f"${{AWS::StackName}} {lambda_name} Function"),
             Environment=lmd.Environment(Variables=lambda_vars),

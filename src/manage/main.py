@@ -57,15 +57,21 @@ def calculate_team_seed(event):
     return f"Team rating for `{ratings}`: `{team_rating}`"
 
 
+# def sort_signups(event, gsheet, challonge):
+#     if not event["data"]["options"][0]["options"][0]["value"]:
+#         return "Cancelled"
+
+#     teams = gsheet.get_all_checked_in_teams()
+#     sorted_teams = sorted(teams, key=lambda x: x["rating"], reverse=True)
+
+
 def run(event, context):
     logging.debug(json.dumps(event))
 
     client = boto3.client("ssm")
-    challonge = Challonge(CHALLONGE_API_KEY)
+    # challonge = Challonge(CHALLONGE_API_KEY)
     discord = Discord(APPLICATION_ID, event["token"])
-    gsheet = GoogleSheet(
-        GOOGLE_API_KEY, GOOGLE_SHEET_ID, CHANNEL_IDS[event["channel_id"]]
-    )
+    # gsheet = GoogleSheet(GOOGLE_API_KEY, GOOGLE_SHEET_ID, SIGNUP_SHEET)
 
     try:
         sub_command = event["data"]["options"][0]["name"]
@@ -76,8 +82,8 @@ def run(event, context):
             message = set_checkin_status(client, event)
         elif sub_command == "calculate_seed":
             message = calculate_team_seed(event)
-        elif sub_command == "update_bracket":
-            message = challonge.update_bracket(event, gsheet.get_checked_in_teams())
+        # elif sub_command == "sort_signups":
+        #     message = sort_signups(event, gsheet, challonge)
         else:
             raise Exception(f"{sub_command} is not a valid command")
 

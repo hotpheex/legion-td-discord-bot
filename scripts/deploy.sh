@@ -25,7 +25,7 @@ function deploy_dev {
             -o DiscordApplicationId="1058247991867219990" \
             -o DiscordPublicKey="f5f2ad3d28b06fb464d8e9ee6d3667e149392467341759d4811ee6996d2e918a" \
             -o GoogleApiKey="${GOOGLE_API_KEY}" \
-            -o GoogleSheetId="1AwWaWBdKxYCSj6LLVZrsfI_zdo0gAqduvng_DkxmeE8" \
+            -o GoogleSheetId="${GOOGLE_SHEET_ID_DEV}" \
             -o ChallongeApiKey="${CHALLONGE_API_KEY}" \
             -o AlertWebhook="${ALERT_WEBHOOK}"
 }
@@ -43,7 +43,7 @@ function deploy_prod {
             -o DiscordApplicationId="1015271519414399038" \
             -o DiscordPublicKey="42be1d3d4136ed14b3a46a60bb11fe92c73c0d84be9337f3e6f11e21edf6e75d" \
             -o GoogleApiKey="${GOOGLE_API_KEY}" \
-            -o GoogleSheetId="1Mi_J_r6vRcKU4AosO0-MGa9MnYX3Df22qchAUmQZVWk" \
+            -o GoogleSheetId="${GOOGLE_SHEET_ID_PROD}" \
             -o ChallongeApiKey="${CHALLONGE_API_KEY}" \
             -o AlertWebhook="${ALERT_WEBHOOK}"
 }

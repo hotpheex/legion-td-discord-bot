@@ -19,11 +19,11 @@ Runs on Lambda functions exposed via API Gateway
 Update Discord slash commands:
 
 ```
-python3 slash_cmds.py <dev | prod>
+python3 scripts/slash_cmds.py <dev | prod>
 ```
 
 Deploy changes:
 
 ```
-./deploy.sh <dev | prod>
+scripts/deploy.sh <dev | prod>
 ```

@@ -47,31 +47,65 @@ def set_checkin_status(client, event):
         return f"Checkins are now set to `{desired_status}`"
 
 
-def calculate_team_seed(event):
-    ratings = []
-    for player in event["data"]["options"][0]["options"]:
-        ratings.append(player["value"])
-
+def calculate_team_seed(ratings):
     team_rating = math.ceil((2 * max(ratings) + min(ratings)) / 3)
 
-    return f"Team rating for `{ratings}`: `{team_rating}`"
+    return team_rating, f"Team rating for `{ratings}`: `{team_rating}`"
 
 
-# def sort_signups(event, gsheet, challonge):
-#     if not event["data"]["options"][0]["options"][0]["value"]:
-#         return "Cancelled"
+def sort_signups(event, gsheet, challonge):
+    if not event["data"]["options"][0]["options"][0]["value"]:
+        return "Cancelled"
+    teams, solos = gsheet.get_all_checkins()
 
-#     teams = gsheet.get_all_checked_in_teams()
-#     sorted_teams = sorted(teams, key=lambda x: x["rating"], reverse=True)
+    # Pair up solos
+    leftover = None
+    sorted_solos = sorted(solos, key=lambda x: x["rating"], reverse=True)
+    if len(sorted_solos) % 2 != 0:
+        leftover = sorted_solos.pop()
+
+    for i in range(0, len(sorted_solos), 2):
+        p1 = sorted_solos[i]
+        p2 = sorted_solos[i+1]
+        ratings = [p1["rating"], p2["rating"]]
+        team_rating, _ = calculate_team_seed(ratings)
+
+        teams.append({
+            "team": f"{p1['player']} {p2['player']}",
+            "player_1": p1['player'],
+            "player_2": p2['player'],
+            "rating": team_rating
+        })
+
+    # Sort teams into divisions
+    sorted_teams = sorted(teams, key=lambda x: x["rating"], reverse=True)
+    div_sizes = get_div_sizes(len(sorted_teams))
+
+    # Sort teams into divisions
+    divisions = []
+    team_index = 0
+    for size in div_sizes:
+        divisions.append(
+            sorted_teams[team_index:team_index + size]
+        )
+        team_index+=size
+
+    # Write divs to team list sheet
+    gsheet.write_teams_to_divs(divisions)
+
+    # Update Challonge brackets
+
+
+    return f"sorted bruh. leftover: {leftover}"
 
 
 def run(event, context):
     logging.debug(json.dumps(event))
 
     client = boto3.client("ssm")
-    # challonge = Challonge(CHALLONGE_API_KEY)
+    challonge = Challonge(CHALLONGE_API_KEY)
     discord = Discord(APPLICATION_ID, event["token"])
-    # gsheet = GoogleSheet(GOOGLE_API_KEY, GOOGLE_SHEET_ID, SIGNUP_SHEET)
+    gsheet = GoogleSheet(GOOGLE_API_KEY, GOOGLE_SHEET_ID, SIGNUP_SHEET)
 
     try:
         sub_command = event["data"]["options"][0]["name"]
@@ -81,9 +115,12 @@ def run(event, context):
         elif sub_command == "checkin_enabled":
             message = set_checkin_status(client, event)
         elif sub_command == "calculate_seed":
-            message = calculate_team_seed(event)
-        # elif sub_command == "sort_signups":
-        #     message = sort_signups(event, gsheet, challonge)
+            ratings = []
+            for player in event["data"]["options"][0]["options"]:
+                ratings.append(player["value"])
+            _, message = calculate_team_seed(ratings)
+        elif sub_command == "sort_signups":
+            message = sort_signups(event, gsheet, challonge)
         else:
             raise Exception(f"{sub_command} is not a valid command")
 

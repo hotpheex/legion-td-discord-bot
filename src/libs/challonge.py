@@ -1,5 +1,8 @@
 import requests
 
+from libs.constants import *
+
+
 class Challonge:
     def __init__(self, api_key):
         self.base_url = "https://api.challonge.com/v1"
@@ -8,7 +11,6 @@ class Challonge:
         }
         self.api_key = api_key
 
-
     def _get_tournament(self, tournament_id):
         res = requests.get(
             f"{self.base_url}/tournaments/{tournament_id}.json",
@@ -16,8 +18,10 @@ class Challonge:
             headers=self.headers,
         )
         res.raise_for_status()
-        return res.json()
-
+        results = res.json()
+        if "tournament" not in results:
+            raise Exception("Tournament with URL `{tournament_id}` not found")
+        return results
 
     def _get_matches(self, tournament_id):
         res = requests.get(
@@ -42,7 +46,6 @@ class Challonge:
         )
         res.raise_for_status()
         return res.json()
-
 
     def _get_participant(self, tournament_id, participant_id):
         res = requests.get(
@@ -77,32 +80,31 @@ class Challonge:
         res.raise_for_status()
         return res.json()
 
-    
-    def update_bracket(self, event, checked_in_teams):
-        for i in event["data"]["options"][0]["options"]:
-            if i["name"] == "tournament_id":
-                tournament_id = i["value"]
-            if i["name"] == "division":
-                division = i["value"]
+    def add_participants_to_tournament(self, divisions):
+        # def update_bracket(self, event, checked_in_teams):
+        # for i in event["data"]["options"][0]["options"]:
+        #     if i["name"] == "tournament_id":
+        #         tournament_id = i["value"]
+        #     if i["name"] == "division":
+        #         division = i["value"]
 
-        tournament = self._get_tournament(tournament_id)
+        for i in range(len(divisions)):
+            tournament_id = DIVISIONS[i + 1]["challonge"]
+            self._get_tournament(DIVISIONS[i + 1]["challonge"])
 
-        if "tournament" not in tournament:
-            return f":no_entry: Tournament with URL `{tournament_id}` not found"
+            existing_participants = self._get_participants(tournament_id)
+            existing_participant_names = []
+            if existing_participants:
+                for participant in existing_participants:
+                    existing_participant_names.append(
+                        participant["participant"]["name"]
+                    )
 
-        existing_participants = self._get_participants(tournament_id)
-        existing_participant_names = []
-        if existing_participants:
-            for participant in existing_participants:
-                existing_participant_names.append(participant["participant"]["name"])
+            participants = []
+            for team in divisions[i]:
+                if team["team"] not in existing_participant_names:
+                    participants.append(team["team"])
 
-        participants = []
-        for team in checked_in_teams:
-            if team not in existing_participant_names:
-                participants.append(team)
+            self._add_bulk_participant(tournament_id, participants)
 
-        result = self._add_bulk_participant(tournament_id, participants)
-        if "errors" not in result:
-            return f":white_check_mark: Tournament `{tournament_id}` participants updated"
-        else:
-            return f":no_entry: Failed to update Tournament `{tournament_id}`: `{json.dumps(result)}`"
+        return None

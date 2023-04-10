@@ -66,16 +66,18 @@ def sort_signups(event, gsheet, challonge):
 
     for i in range(0, len(sorted_solos), 2):
         p1 = sorted_solos[i]
-        p2 = sorted_solos[i+1]
+        p2 = sorted_solos[i + 1]
         ratings = [p1["rating"], p2["rating"]]
         team_rating, _ = calculate_team_seed(ratings)
 
-        teams.append({
-            "team": f"{p1['player']} {p2['player']}",
-            "player_1": p1['player'],
-            "player_2": p2['player'],
-            "rating": team_rating
-        })
+        teams.append(
+            {
+                "team": f"{p1['player']} {p2['player']}",
+                "player_1": p1["player"],
+                "player_2": p2["player"],
+                "rating": team_rating,
+            }
+        )
 
     # Sort teams into divisions
     sorted_teams = sorted(teams, key=lambda x: x["rating"], reverse=True)
@@ -85,18 +87,24 @@ def sort_signups(event, gsheet, challonge):
     divisions = []
     team_index = 0
     for size in div_sizes:
-        divisions.append(
-            sorted_teams[team_index:team_index + size]
-        )
-        team_index+=size
+        divisions.append(sorted_teams[team_index : team_index + size])
+        team_index += size
 
     # Write divs to team list sheet
-    gsheet.write_teams_to_divs(divisions)
+    if not gsheet.write_teams_to_div_sheets(divisions):
+        return "Failed to write teams to division sheets"
 
     # Update Challonge brackets
+    challonge.add_participants_to_tournament(divisions)
 
-
-    return f"sorted bruh. leftover: {leftover}"
+    message = f":white_check_mark: Teams sorted in GSheets and added to Challonge:\n```Total teams: {len(sorted_teams)}\nSolo Signups: {len(solos)}"
+    for i in range(len(divisions)):
+        message += f"\nDivision {i+1}: {len(divisions[i])}"
+    message += "```"
+    if leftover:
+        message += f"\n:cry: A solo player didn't get a team: `{leftover['player']}`"
+    return message
+    # return f":white_check_mark: Teams sorted in GSheets and added to Challonge:\nTotal teams: {len(sorted_teams)}\nDiv 1: {len(divisions[0])}\nDiv 2: {len(divisions[1])}\nDiv 3: {len(divisions[2])}\nDiv 4: {len(divisions[3])}\nDiv 5: {len(divisions[4])}"
 
 
 def run(event, context):

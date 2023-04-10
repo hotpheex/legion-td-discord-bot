@@ -49,40 +49,26 @@ class GoogleSheet:
 
         return checked_in_teams, checked_in_solos
 
-    def write_teams_to_divs(self, divisions):
+    def write_teams_to_div_sheets(self, divisions):
         for i in range(len(divisions)):
             updates = []
             for o in range(len(divisions[i])):
                 team = divisions[i][o]
-                updates.append({
-                    "range": f"B{o+3}:F{o+3}",
-                    "values": [[team["team"], team["player_1"], team["player_2"], team["rating"], CHECKED_IN_MSG]]
-                })
-            
-            print(i+1, json.dumps(updates))
-            self.document.worksheet(DIVISIONS[i+1]["sheet"]).batch_update(updates)
+                updates.append(
+                    {
+                        "range": f"B{o+2}:F{o+2}",
+                        "values": [
+                            [
+                                team["team"],
+                                team["player_1"],
+                                team["player_2"],
+                                team["rating"],
+                                CHECKED_IN_MSG,
+                            ]
+                        ],
+                    }
+                )
 
-        return
+            self.document.worksheet(DIVISIONS[i + 1]["sheet"]).batch_update(updates)
 
-        # checked_in_cells = self.worksheet.findall(
-        #     query=CHECKED_IN_MSG, in_column=COLUMNS["team"]["day_1"]
-        # )
-
-        # checked_in_teams = []
-        # for cell in checked_in_cells:
-        #     team_row =
-        #     checked_in_teams.append({
-        #         "team": self.worksheet.cell()
-        #     })
-
-        # checked_in_rows = []
-        # for cell in checked_in_cells:
-        #     if cell.value == CHECKED_IN_MSG:
-        #         checked_in_rows.append(cell.row)
-        # team_names = self.worksheet.col_values(COLUMNS["team"]["name"])
-
-        # checked_in_teams = []
-        # for row in checked_in_rows:
-        #     checked_in_teams.append(team_names[row - 1])
-
-        # return checked_in_teams
+        return True

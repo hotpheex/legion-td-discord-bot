@@ -61,13 +61,13 @@ def checkin(event, checkin_status):
         if not gsheet.worksheet.find(
             query=player_name, case_sensitive=False, in_row=name_cell.row
         ):
-            if os.getenv("DEBUG") == "true":
-                return f":no_entry: Player `{player_name}` is not on team `{team_name}`\nFound: `{}"
-            else:
-                return f":no_entry: Player `{player_name}` is not on team `{team_name}`\nPlease make sure your Discord nickname matches your in game name"
+            # if os.getenv("DEBUG") == "true":
+            #     return f":no_entry: Player `{player_name}` is not on team `{team_name}`" # output debug something?
+            # else:
+            return f":no_entry: Player `{player_name}` is not on team `{team_name}`\nPlease make sure your Discord nickname matches your in game name"
     elif sub_command == "solo":
         if checkin_status == "day_2":
-            return f":no_entry: Solo players do not need to checkin on Day 2"
+            return f":no_entry: Solo players should check in as their team on Day 2"
 
     # Check if already checked in
     status_cell = gsheet.worksheet.cell(

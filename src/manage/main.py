@@ -7,6 +7,7 @@ import math
 import os
 
 import boto3
+from requests.exceptions import HTTPError
 
 from libs.constants import *
 from libs.challonge import Challonge
@@ -54,30 +55,64 @@ def calculate_team_seed(ratings):
 
 
 def sort_signups(event, gsheet, challonge):
+    excluded_teams = []
+
     if not event["data"]["options"][0]["options"][0]["value"]:
         return "Cancelled"
+
     teams, solos = gsheet.get_all_checkins()
 
-    # Pair up solos
-    leftover = None
-    sorted_solos = sorted(solos, key=lambda x: x["rating"], reverse=True)
-    if len(sorted_solos) % 2 != 0:
-        leftover = sorted_solos.pop()
+    # Ensure 8 top rated teams are always in
+    teams_by_rating = sorted(teams, key=lambda x: x["rating"], reverse=True)
+    div_1_size = get_div_sizes(MAX_TEAMS)[0]
+    playing_teams = teams_by_rating[0: div_1_size - 1]
 
-    for i in range(0, len(sorted_solos), 2):
-        p1 = sorted_solos[i]
-        p2 = sorted_solos[i + 1]
-        ratings = [p1["rating"], p2["rating"]]
-        team_rating, _ = calculate_team_seed(ratings)
+    logging.debug(json.dumps(playing_teams))
 
-        teams.append(
-            {
-                "team": f"{p1['player']} {p2['player']}",
-                "player_1": p1["player"],
-                "player_2": p2["player"],
-                "rating": team_rating,
-            }
-        )
+    # Fill with up to 104 teams in order of signup
+    for team in teams:
+        if len(playing_teams) == MAX_TEAMS:
+            excluded_teams.append(team)
+            continue
+        if team not in playing_teams:
+            playing_teams.append(team)
+
+    logging.debug(json.dumps(playing_teams))
+    logging.debug(json.dumps(excluded_teams))
+
+    # If there is still room, fill with teams of solos in order of signup
+    if len(playing_teams) < MAX_TEAMS:
+        playing_solos = []
+        excluded_solos = []
+        teams_needed = MAX_TEAMS - len(playing_teams)
+
+        for solo in solos:
+            if len(playing_solos) < teams_needed * 2:
+                playing_solos.append(solo)
+            else:
+                excluded_solos.append(solo)
+
+        logging.debug(json.dumps(playing_solos))
+        logging.debug(json.dumps(excluded_solos))
+
+        # Pair up solos
+        sorted_solos = sorted(playing_solos, key=lambda x: x["rating"], reverse=True)
+
+        for i in range(0, len(sorted_solos), 2):
+            p1 = sorted_solos[i]
+            p2 = sorted_solos[i + 1]
+            team_rating, _ = calculate_team_seed([p1["rating"], p2["rating"]])
+
+            playing_teams.append(
+                {
+                    "team": f"{p1['player']} {p2['player']}",
+                    "player_1": p1["player"],
+                    "player_2": p2["player"],
+                    "rating": team_rating,
+                }
+            )
+    else:
+        excluded_solos = solos
 
     # Sort teams into divisions
     sorted_teams = sorted(teams, key=lambda x: x["rating"], reverse=True)
@@ -91,21 +126,30 @@ def sort_signups(event, gsheet, challonge):
         team_index += size
 
     # Write divs to team list sheet
+    # TODO add try/except
     if not gsheet.write_teams_to_div_sheets(divisions):
-        return "Failed to write teams to division sheets"
+        return ":warning: Failed to write teams to division sheets or Challonge"
 
     # Update Challonge brackets
     challonge.add_participants_to_tournament(divisions)
+    try:
+        challonge.add_participants_to_tournament(divisions)
+    except HTTPError:
+        return ":warning: Successfully sorted teams but failed to add all teams to Challonge tournaments"
 
-    message = f":white_check_mark: Teams sorted in GSheets and added to Challonge:\n```Total teams: {len(sorted_teams)}\nSolo Signups: {len(solos)}"
+    message = f":white_check_mark: Teams sorted in GSheets and added to Challonge:\n```Team Signups: {len(teams)}\nSolo Signups: {len(solos)}"
     for i in range(len(divisions)):
         message += f"\nDivision {i+1}: {len(divisions[i])}"
-    message += "```"
-    if leftover:
-        message += f"\n:cry: A solo player didn't get a team: `{leftover['player']}`"
+    if excluded_teams:
+        message += f"\n\nTeams that were excluded:"
+        for team in excluded_teams:
+            message += f"\n{team['team']}"
+    if excluded_solos:
+        message += f"\n\nSolo players that were excluded:"
+        for solo in excluded_solos:
+            message += f"\n{solo['player']}"
+    message += "\n```"
     return message
-    # return f":white_check_mark: Teams sorted in GSheets and added to Challonge:\nTotal teams: {len(sorted_teams)}\nDiv 1: {len(divisions[0])}\nDiv 2: {len(divisions[1])}\nDiv 3: {len(divisions[2])}\nDiv 4: {len(divisions[3])}\nDiv 5: {len(divisions[4])}"
-
 
 def run(event, context):
     logging.debug(json.dumps(event))

@@ -3,12 +3,12 @@ COLUMNS = {
         "name": 2,
         "day_1": 6,
         "day_2": 7,
-        "day_1_range": "A",
+        "format_range": "A",
     },
     "solo": {
         "name": 9,
         "day_1": 11,
-        "day_1_range": "I",
+        "format_range": "I",
     },
 }
 COLORS = {
@@ -57,16 +57,17 @@ RESULTS_CHANNEL_IDS = {
 }
 RESULTS_CHANNEL_IDS["1023401872750547014"] = "a1nhuvjx"  # My bot-test Channel
 
-
 def get_div_sizes(number_of_teams):
-    if number_of_teams >= 80:
-        div3 = 16
-        div4 = 32
-    elif number_of_teams >= 96:
+    if number_of_teams > 88:
         div3 = 32
+        div4 = 32
+    elif number_of_teams > 72:
+        div3 = 16
         div4 = 32
     else:
         div3 = 16
         div4 = 16
 
     return [8, 16, div3, div4, 16]
+
+MAX_TEAMS = 104

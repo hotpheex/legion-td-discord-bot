@@ -1,5 +1,5 @@
 #!/bin/bash
-set -u
+# set -u
 
 function confirm {
   read -p "Are you sure you want to deploy to prod? " -n 1 -r
@@ -29,6 +29,7 @@ function deploy_dev {
             -o GoogleSheetId="${GOOGLE_SHEET_ID_DEV}" \
             -o ChallongeApiKey="${CHALLONGE_API_KEY}" \
             -o AlertWebhook="${ALERT_WEBHOOK}"
+  cd ..
 }
 
 function deploy_prod {
@@ -48,6 +49,7 @@ function deploy_prod {
             -o GoogleSheetId="${GOOGLE_SHEET_ID_PROD}" \
             -o ChallongeApiKey="${CHALLONGE_API_KEY}" \
             -o AlertWebhook="${ALERT_WEBHOOK}"
+  cd ..
 }
 
 case "${1}" in

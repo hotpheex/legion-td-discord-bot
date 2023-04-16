@@ -78,16 +78,10 @@ class Challonge:
             headers=self.headers,
         )
         res.raise_for_status()
+        print(res.text)
         return res.json()
 
     def add_participants_to_tournament(self, divisions):
-        # def update_bracket(self, event, checked_in_teams):
-        # for i in event["data"]["options"][0]["options"]:
-        #     if i["name"] == "tournament_id":
-        #         tournament_id = i["value"]
-        #     if i["name"] == "division":
-        #         division = i["value"]
-
         for i in range(len(divisions)):
             tournament_id = DIVISIONS[i + 1]["challonge"]
             self._get_tournament(DIVISIONS[i + 1]["challonge"])
@@ -100,11 +94,15 @@ class Challonge:
                         participant["participant"]["name"]
                     )
 
-            participants = []
+            new_participants = []
             for team in divisions[i]:
                 if team["team"] not in existing_participant_names:
-                    participants.append(team["team"])
+                    new_participants.append(team["team"])
 
-            self._add_bulk_participant(tournament_id, participants)
+            print("ID", tournament_id)
+            print("NEW", new_participants)
+
+            if new_participants:
+                self._add_bulk_participant(tournament_id, new_participants)
 
         return None

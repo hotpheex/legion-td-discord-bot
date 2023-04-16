@@ -81,14 +81,21 @@ def create_upload_deployment_archive(local_path, s3_layer_bucket, lambda_name):
 
     s3_client = boto3.client("s3")
     try:
-        s3_client.upload_file(
-            f"build/{lambda_name}/archive.zip",
-            s3_layer_bucket,
-            f"{lambda_name}/archive-{archive_hash}.zip",
-        )
+        # If the object exists, skip the upload
+        object_name = f"{lambda_name}/archive-{archive_hash}.zip"
+        s3_client.head_object(Bucket=s3_layer_bucket, Key=object_name)
+        print(f"'{object_name}' already exists in the bucket")
     except ClientError as e:
-        raise SystemExit(e)
-    print(f"{lambda_name}/archive-{archive_hash}.zip Uploaded...")
+        if e.response['Error']['Code'] == '404':
+            # Object does not exist, so upload the file
+            s3_client.upload_file(
+                f"build/{lambda_name}/archive.zip",
+                s3_layer_bucket,
+                object_name,
+            )
+            print(f"'{object_name}' uploaded to the bucket")
+        else:
+            raise SystemExit(e)
 
     return archive_hash
 

@@ -36,6 +36,8 @@ def checkin(event, checkin_status):
     if checkin_status == "day_2":
         if sub_command == "solo":
             return f":no_entry: Solo players should check in as their team on Day 2"
+        if CHANNEL_IDS[channel_id] == "Sign-up":
+            return f":no_entry: Please use the appropriate #division-x channel on Day 2"
         gsheet = GoogleSheet(GOOGLE_API_KEY, GOOGLE_SHEET_ID, CHANNEL_IDS[channel_id])
     else:
         gsheet = GoogleSheet(GOOGLE_API_KEY, GOOGLE_SHEET_ID, SIGNUP_SHEET)

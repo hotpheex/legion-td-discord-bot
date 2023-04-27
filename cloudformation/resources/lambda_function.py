@@ -4,8 +4,6 @@ from os import path
 from shutil import copytree, copyfile, make_archive
 from sys import executable
 
-# from tempfile import TemporaryDirectory
-
 import awacs.logs as alog
 import awacs.sts as asts
 import boto3
@@ -14,44 +12,6 @@ import troposphere.iam as iam
 from awacs.aws import Allow, PolicyDocument, Principal, Statement
 from botocore.exceptions import ClientError
 from troposphere import GetAtt, Sub, Ref
-
-
-# def create_upload_deployment_archive(local_path, s3_layer_bucket, lambda_name):
-#     with TemporaryDirectory() as tmpdir:
-#         copytree(local_path, f"{tmpdir}/archive/handler")
-#         copytree("../src/libs", f"{tmpdir}/archive/libs")
-
-#         if path.exists(f"{tmpdir}/archive/handler/requirements.txt"):
-#             subprocess.check_call(
-#                 [
-#                     executable,
-#                     "-m",
-#                     "pip",
-#                     "install",
-#                     "--target",
-#                     f"{tmpdir}/archive",
-#                     "-r",
-#                     f"{tmpdir}/archive/handler/requirements.txt",
-#                 ]
-#             )
-
-#         make_archive(f"{tmpdir}/archive", "zip", f"{tmpdir}/archive")
-
-#         with open(f"{tmpdir}/archive.zip", "rb") as fh:
-#             archive_hash = sha512(fh.read()).hexdigest()[:10]
-
-#         s3_client = boto3.client("s3")
-#         try:
-#             s3_client.upload_file(
-#                 f"{tmpdir}/archive.zip",
-#                 s3_layer_bucket,
-#                 f"{lambda_name}/archive-{archive_hash}.zip",
-#             )
-#         except ClientError as e:
-#             raise SystemExit(e)
-#         print(f"{lambda_name}/archive-{archive_hash}.zip Uploaded...")
-
-#     return archive_hash
 
 
 def create_upload_deployment_archive(local_path, s3_layer_bucket, lambda_name):
@@ -86,7 +46,7 @@ def create_upload_deployment_archive(local_path, s3_layer_bucket, lambda_name):
         s3_client.head_object(Bucket=s3_layer_bucket, Key=object_name)
         print(f"'{object_name}' already exists in the bucket")
     except ClientError as e:
-        if e.response['Error']['Code'] == '404':
+        if e.response["Error"]["Code"] == "404":
             # Object does not exist, so upload the file
             s3_client.upload_file(
                 f"build/{lambda_name}/archive.zip",

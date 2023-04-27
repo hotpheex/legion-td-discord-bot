@@ -33,8 +33,14 @@ def checkin(event, checkin_status):
     if sub_command == "team":
         team_name = event["data"]["options"][0]["options"][0]["value"]
 
-    # gsheet = GoogleSheet(GOOGLE_API_KEY, GOOGLE_SHEET_ID, CHANNEL_IDS[channel_id])
-    gsheet = GoogleSheet(GOOGLE_API_KEY, GOOGLE_SHEET_ID, SIGNUP_SHEET)
+    if checkin_status == "day_2":
+        if sub_command == "solo":
+            return f":no_entry: Solo players should check in as their team on Day 2"
+        if CHANNEL_IDS[channel_id] == "Sign-up":
+            return f":no_entry: Please use the appropriate #division-x channel on Day 2"
+        gsheet = GoogleSheet(GOOGLE_API_KEY, GOOGLE_SHEET_ID, CHANNEL_IDS[channel_id])
+    else:
+        gsheet = GoogleSheet(GOOGLE_API_KEY, GOOGLE_SHEET_ID, SIGNUP_SHEET)
 
     query_column = COLUMNS[sub_command]["name"]
 
@@ -50,7 +56,8 @@ def checkin(event, checkin_status):
         query=query_name, case_sensitive=False, in_column=query_column
     )
     if not name_cell:
-        return f":no_entry: `{query_name}` not found on signup sheet\nPlease make sure your Discord nickname matches your in game name"
+        return f":no_entry: `{query_name}` not found in the `{CHANNEL_IDS[channel_id]}` sheet\nPlease make sure your Discord nickname matches your in game name"
+        # TODO Find and suggest the correct div channel
         # division = gsheet.search_player_all_divs(query_name, query_column)
         # if division:
         #     return f":no_entry: `{query_name}` is registered in {division}"
@@ -62,9 +69,6 @@ def checkin(event, checkin_status):
             query=player_name, case_sensitive=False, in_row=name_cell.row
         ):
             return f":no_entry: Player `{player_name}` is not on team `{team_name}`\nPlease make sure your Discord nickname matches your in game name"
-    elif sub_command == "solo":
-        if checkin_status == "day_2":
-            return f":no_entry: Solo players do not need to checkin on Day 2"
 
     # Check if already checked in
     status_cell = gsheet.worksheet.cell(
@@ -77,16 +81,10 @@ def checkin(event, checkin_status):
     gsheet.worksheet.update_cell(
         name_cell.row, COLUMNS[sub_command][checkin_status], CHECKED_IN_MSG
     )
-    if checkin_status == "day_1":
-        gsheet.worksheet.format(
-            f"{COLUMNS[sub_command]['day_1_range']}{name_cell.row}:{status_cell.address}",
-            {"backgroundColor": COLORS[sub_command]},
-        )
-    else:
-        gsheet.worksheet.format(
-            f"{status_cell.address}:{status_cell.address}",
-            {"backgroundColor": COLORS[sub_command]},
-        )
+    gsheet.worksheet.format(
+        f"{COLUMNS[sub_command]['format_range']}{name_cell.row}:{status_cell.address}",
+        {"backgroundColor": COLORS[sub_command]},
+    )
 
     return f":white_check_mark: `{query_name}` checked in!"
 
@@ -105,8 +103,6 @@ def run(event, context):
 
         if checkin_status == "disabled":
             message = f":no_entry: Tournament checkins are not currently open"
-        # elif event["channel_id"] not in CHANNEL_IDS:
-        #     message = f":no_entry: `/checkin` not supported in this channel"
         else:
             message = checkin(event, checkin_status)
 

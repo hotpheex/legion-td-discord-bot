@@ -20,8 +20,6 @@ else:
     logging.getLogger().setLevel(logging.INFO)
 
 DISCORD_PUBLIC_KEY = os.environ["DISCORD_PUBLIC_KEY"]
-DISCORD_PING_PONG = {"statusCode": 200, "body": json.dumps({"type": 1})}
-
 ALERT_WEBHOOK = os.environ["ALERT_WEBHOOK"]
 
 # INTERACTION RESPONSE TYPES
@@ -62,13 +60,16 @@ def valid_signature(event):
 
 def run(event, context):
     logging.debug(json.dumps(event))
-    if not valid_signature(event):
-        return discord_body(200, 2, "Error Validating Discord Signature")
+    try:
+        if not valid_signature(event):
+            return discord_body(200, 2, "Error Validating Discord Signature")
+    except KeyError:
+        return {"statusCode": 200, "body": ""}
 
     body = json.loads(event["body"])
 
     if body["type"] == 1:
-        return DISCORD_PING_PONG
+        return {"statusCode": 200, "body": json.dumps({"type": 1})}
 
     if body["type"] == 2:
         command = body["data"]["name"]

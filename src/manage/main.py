@@ -105,7 +105,7 @@ def sort_signups(event, gsheet, challonge):
 
             playing_teams.append(
                 {
-                    "team": f"{p1['player']} {p2['player']}",
+                    "team": f"{p1['player']}_{p2['player']}",
                     "player_1": p1["player"],
                     "player_2": p2["player"],
                     "rating": team_rating,

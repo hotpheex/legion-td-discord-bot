@@ -99,9 +99,6 @@ class Challonge:
                 if team["team"] not in existing_participant_names:
                     new_participants.append(team["team"])
 
-            print("ID", tournament_id)
-            print("NEW", new_participants)
-
             if new_participants:
                 self._add_bulk_participant(tournament_id, new_participants)
 

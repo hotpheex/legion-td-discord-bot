@@ -56,7 +56,8 @@ def checkin(event, checkin_status):
         query=query_name, case_sensitive=False, in_column=query_column
     )
     if not name_cell:
-        return f":no_entry: `{query_name}` not found on signup sheet\nPlease make sure your Discord nickname matches your in game name"
+        return f":no_entry: `{query_name}` not found in the `{CHANNEL_IDS[channel_id]}` sheet\nPlease make sure your Discord nickname matches your in game name"
+        # TODO Find and suggest the correct div channel
         # division = gsheet.search_player_all_divs(query_name, query_column)
         # if division:
         #     return f":no_entry: `{query_name}` is registered in {division}"

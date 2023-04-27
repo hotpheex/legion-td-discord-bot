@@ -28,24 +28,24 @@ class GoogleSheet:
         checked_in_solos = []
         for row in all_records:
             if row[10] == CHECKED_IN_MSG:
-                checked_in_solos.append(
-                    {
-                        "player": row[8],
-                        "rating": round(float(row[9])),
-                    }
-                )
+                solo = {
+                    "player": row[8],
+                    "rating": round(float(row[9])),
+                }
+                if solo not in checked_in_solos:
+                    checked_in_solos.append(solo)
 
         checked_in_teams = []
         for row in all_records:
             if row[5] == CHECKED_IN_MSG:
-                checked_in_teams.append(
-                    {
-                        "team": row[1],
-                        "player_1": row[2],
-                        "player_2": row[3],
-                        "rating": round(float(row[4])),
-                    }
-                )
+                team = {
+                    "team": row[1],
+                    "player_1": row[2],
+                    "player_2": row[3],
+                    "rating": round(float(row[4])),
+                }
+                if team not in checked_in_teams:
+                    checked_in_teams.append(team)
 
         return checked_in_teams, checked_in_solos
 

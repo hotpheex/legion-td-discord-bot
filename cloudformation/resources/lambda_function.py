@@ -13,7 +13,7 @@ import troposphere.awslambda as lmd
 import troposphere.iam as iam
 from awacs.aws import Allow, PolicyDocument, Principal, Statement
 from botocore.exceptions import ClientError
-from troposphere import GetAtt, Sub
+from troposphere import GetAtt, Sub, Ref
 
 
 # def create_upload_deployment_archive(local_path, s3_layer_bucket, lambda_name):
@@ -180,6 +180,15 @@ def add(
             Role=GetAtt(iam_lambda_execution_role, "Arn"),
             Runtime="python3.9",
             Timeout=lambda_timeout,
+        )
+    )
+
+    lambda_invoke_config = template.add_resource(
+        lmd.EventInvokeConfig(
+            f"{cfn_name}LambdaInvokeConfig",
+            FunctionName=Ref(lambda_function),
+            MaximumRetryAttempts=0,
+            Qualifier="$LATEST",
         )
     )
 

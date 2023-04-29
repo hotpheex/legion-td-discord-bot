@@ -78,6 +78,11 @@ def run(event, context):
     discord = Discord(None, None)
 
     try:
+        # Respond to checkin with FAQ page
+        if command == "signup":
+            return discord_body(200, 4, "For signup and other instructions read the FAQ: <https://beta.legiontd2.com/esports/#faq>")
+
+        # Invoke the appropriate lambda
         command_func = commands.get(command)
         response = client.invoke(
             FunctionName=command_func,

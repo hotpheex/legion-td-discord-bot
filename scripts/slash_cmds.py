@@ -22,6 +22,11 @@ bot_key = os.getenv(f"bot_key_{env}")
 
 commands = [
     {
+        "name": "signup",
+        "description": "Signup to a Tournament",
+        "dm_permission": False,
+    },
+    {
         "name": "checkin",
         "description": "Checkin to a Tournament",
         "dm_permission": False,

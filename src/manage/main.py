@@ -20,29 +20,22 @@ if os.getenv("DEBUG") == "true":
 else:
     logging.getLogger().setLevel(logging.INFO)
 
-CHECKIN_STATUS_PARAM = os.environ["CHECKIN_STATUS_PARAM"]
-APPLICATION_ID = os.environ["APPLICATION_ID"]
-ALERT_WEBHOOK = os.environ["ALERT_WEBHOOK"]
-CHALLONGE_API_KEY = os.environ["CHALLONGE_API_KEY"]
-GOOGLE_API_KEY = os.environ["GOOGLE_API_KEY"]
-GOOGLE_SHEET_ID = os.environ["GOOGLE_SHEET_ID"]
 
-
-def get_checkin_status(client):
-    response = client.get_parameter(Name=CHECKIN_STATUS_PARAM)
+def get_checkin_status(client, checkin_status_param):
+    response = client.get_parameter(Name=checkin_status_param)
     logging.debug(response)
     return response["Parameter"]["Value"]
 
 
-def set_checkin_status(client, event):
-    current_status = get_checkin_status(client)
+def set_checkin_status(client, event, checkin_status_param):
+    current_status = get_checkin_status(client, checkin_status_param)
     desired_status = event["data"]["options"][0]["options"][0]["value"]
 
     if current_status == desired_status:
         return f"Checkins already set to `{current_status}`"
     else:
         response = client.put_parameter(
-            Name=CHECKIN_STATUS_PARAM, Value=str(desired_status).lower(), Overwrite=True
+            Name=checkin_status_param, Value=str(desired_status).lower(), Overwrite=True
         )
         logging.debug(response)
         return f"Checkins are now set to `{desired_status}`"
@@ -50,26 +43,20 @@ def set_checkin_status(client, event):
 
 def calculate_team_seed(ratings):
     team_rating = math.ceil((2 * max(ratings) + min(ratings)) / 3)
-
     return team_rating, f"Team rating for `{ratings}`: `{team_rating}`"
 
 
-def sort_signups(event, gsheet, challonge):
+def generate_divisions(teams, solos):
+    playing_solos = []
     excluded_teams = []
-
-    if not event["data"]["options"][0]["options"][0]["value"]:
-        return "Cancelled"
-
-    teams, solos = gsheet.get_all_checkins()
+    excluded_solos = []
 
     # Ensure 8 top rated teams are always in
     teams_by_rating = sorted(teams, key=lambda x: x["rating"], reverse=True)
     div_1_size = get_div_sizes(MAX_TEAMS)[0]
-    playing_teams = teams_by_rating[0: div_1_size - 1]
+    playing_teams = teams_by_rating[0 : div_1_size - 1]
 
-    logging.debug(json.dumps(playing_teams))
-
-    # Fill with up to 104 teams in order of signup
+    # Fill with up to MAX_TEAMS teams in order of signup
     for team in teams:
         if len(playing_teams) == MAX_TEAMS:
             excluded_teams.append(team)
@@ -77,25 +64,22 @@ def sort_signups(event, gsheet, challonge):
         if team not in playing_teams:
             playing_teams.append(team)
 
-    logging.debug(json.dumps(playing_teams))
-    logging.debug(json.dumps(excluded_teams))
-
-    # If there is still room, fill with teams of solos in order of signup
+    # If there are not enough teams, fill with solos in order of signup
     if len(playing_teams) < MAX_TEAMS:
-        playing_solos = []
-        excluded_solos = []
         teams_needed = MAX_TEAMS - len(playing_teams)
 
+        # Sort solos by rating
         for solo in solos:
             if len(playing_solos) < teams_needed * 2:
                 playing_solos.append(solo)
             else:
                 excluded_solos.append(solo)
 
-        logging.debug(json.dumps(playing_solos))
-        logging.debug(json.dumps(excluded_solos))
+        # If there is an odd number of solos, exclude the lowest rated
+        if len(playing_solos) % 2 == 1:
+            excluded_solos.append(playing_solos.pop())
 
-        # Pair up solos
+        # Sort solos into teams
         sorted_solos = sorted(playing_solos, key=lambda x: x["rating"], reverse=True)
 
         for i in range(0, len(sorted_solos), 2):
@@ -115,18 +99,54 @@ def sort_signups(event, gsheet, challonge):
         excluded_solos = solos
 
     # Sort teams into divisions
-    sorted_teams = sorted(teams, key=lambda x: x["rating"], reverse=True)
+    sorted_teams = sorted(playing_teams, key=lambda x: x["rating"], reverse=True)
     div_sizes = get_div_sizes(len(sorted_teams))
 
     # Sort teams into divisions
     divisions = []
     team_index = 0
-    for size in div_sizes:
-        divisions.append(sorted_teams[team_index : team_index + size])
-        team_index += size
 
-    # Write divs to team list sheet
+    # Determine last division that will contain players
+    last_div_index = 0
+    for i in range(len(div_sizes)):
+        if len(sorted_teams) > sum(div_sizes[0:i]):
+            last_div_index = i
+
+    # Fill last division with teams
+    last_div = [sorted_teams[: div_sizes[last_div_index]]]
+    sorted_teams = sorted_teams[div_sizes[last_div_index] :]
+
+    # Fill other divisions with teams top to bottom
+    for i in range(len(div_sizes)):
+        divisions.append(sorted_teams[team_index : team_index + div_sizes[i]])
+        team_index += div_sizes[i]
+
+    # Add the last division
+    divisions[last_div_index] = last_div[0]
+
+    logging.debug("playing_solos " + json.dumps(playing_solos))
+    logging.debug("playing_teams " + json.dumps(playing_teams))
+    logging.debug("excluded_solos " + json.dumps(excluded_solos))
+    logging.debug("excluded_teams " + json.dumps(excluded_teams))
+
+    return (
+        divisions,
+        playing_teams,
+        playing_solos,
+        excluded_teams,
+        excluded_solos,
+    )
+
+
+def sort_signups(event, gsheet, challonge):
+    if not event["data"]["options"][0]["options"][0]["value"]:
+        return "Cancelled"
+
+    teams, solos = gsheet.get_all_checkins()
+    divisions, excluded_teams, excluded_solos = generate_divisions(teams, solos)
+
     # TODO add try/except
+    # Write divs to team list sheet
     if not gsheet.write_teams_to_div_sheets(divisions):
         return ":warning: Failed to write teams to division sheets or Challonge"
 
@@ -151,8 +171,16 @@ def sort_signups(event, gsheet, challonge):
     message += "\n```"
     return message
 
-def run(event, context):
+
+def lambda_handler(event, context):
     logging.debug(json.dumps(event))
+
+    CHECKIN_STATUS_PARAM = os.environ["CHECKIN_STATUS_PARAM"]
+    APPLICATION_ID = os.environ["APPLICATION_ID"]
+    ALERT_WEBHOOK = os.environ["ALERT_WEBHOOK"]
+    CHALLONGE_API_KEY = os.environ["CHALLONGE_API_KEY"]
+    GOOGLE_API_KEY = os.environ["GOOGLE_API_KEY"]
+    GOOGLE_SHEET_ID = os.environ["GOOGLE_SHEET_ID"]
 
     client = boto3.client("ssm")
     challonge = Challonge(CHALLONGE_API_KEY)
@@ -162,10 +190,10 @@ def run(event, context):
     try:
         sub_command = event["data"]["options"][0]["name"]
         if sub_command == "checkin_status":
-            current_status = get_checkin_status(client)
+            current_status = get_checkin_status(client, CHECKIN_STATUS_PARAM)
             message = f"Checkins are currently set to `{current_status}`"
         elif sub_command == "checkin_enabled":
-            message = set_checkin_status(client, event)
+            message = set_checkin_status(client, event, CHECKIN_STATUS_PARAM)
         elif sub_command == "calculate_seed":
             ratings = []
             for player in event["data"]["options"][0]["options"]:

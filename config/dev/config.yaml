@@ -1,0 +1,6 @@
+stack_tags:
+  client: legion-td-discord-bot-development
+parameters:
+  EnableDebug: true
+  DiscordApplicationId: "1058247991867219990"
+  DiscordPublicKey: f5f2ad3d28b06fb464d8e9ee6d3667e149392467341759d4811ee6996d2e918a

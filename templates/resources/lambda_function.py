@@ -136,7 +136,7 @@ def add(
             ),
             Description=Sub(f"${{AWS::StackName}} {lambda_name} Function"),
             Environment=lmd.Environment(Variables=lambda_vars),
-            Handler=f"run.lambda_handler",
+            Handler=f"handler/main.lambda_handler",
             Role=GetAtt(iam_lambda_execution_role, "Arn"),
             Runtime="python3.9",
             Timeout=lambda_timeout,

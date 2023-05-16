@@ -1,6 +1,5 @@
 .vscode
 __pycache__
 .pytest_cache
-cloudformation/template.yaml
-cloudformation/build
+templates/build
 scripts/creds.sh

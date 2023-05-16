@@ -1,0 +1,11 @@
+region: ap-southeast-2
+template:
+  path: template.py
+  type: file
+stack_tags:
+  client: legion-tower-defense
+parameters:
+  GoogleApiKey: {{ environment_variable.GOOGLE_API_KEY }}
+  GoogleSheetId: {{ environment_variable.GOOGLE_SHEET_ID_DEV }}
+  ChallongeApiKey: {{ environment_variable.CHALLONGE_API_KEY }}
+  AlertWebhook: {{ environment_variable.ALERT_WEBHOOK }}

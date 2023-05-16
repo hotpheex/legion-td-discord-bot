@@ -27,12 +27,19 @@ CHECKED_IN_MSG = "Checked In"
 SIGNUP_SHEET = "Sign-up"
 
 DIVISIONS = {
-    1: {"sheet": "Division 1", "challonge": "May2023NovaCupDivision1"},
-    2: {"sheet": "Division 2", "challonge": "May2023NovaCupDivision2"},
-    3: {"sheet": "Division 3", "challonge": "May2023NovaCupDivision3"},
-    4: {"sheet": "Division 4", "challonge": "May2023NovaCupDivision4"},
-    5: {"sheet": "Division 5", "challonge": "May2023NovaCupDivision5"},
+    1: {"sheet": "Division 1", "challonge": "t68j2e37"},
+    2: {"sheet": "Division 2", "challonge": "v9uncccy"},
+    3: {"sheet": "Division 3", "challonge": "tf66zw7g"},
+    4: {"sheet": "Division 4", "challonge": "1apsosx6"},
+    5: {"sheet": "Division 5", "challonge": "iamltixa"},
 }
+# DIVISIONS = {
+#     1: {"sheet": "Division 1", "challonge": "May2023NovaCupDivision1"},
+#     2: {"sheet": "Division 2", "challonge": "May2023NovaCupDivision2"},
+#     3: {"sheet": "Division 3", "challonge": "May2023NovaCupDivision3"},
+#     4: {"sheet": "Division 4", "challonge": "May2023NovaCupDivision4"},
+#     5: {"sheet": "Division 5", "challonge": "May2023NovaCupDivision5"},
+# }
 
 # Division channels
 CHANNEL_IDS = {

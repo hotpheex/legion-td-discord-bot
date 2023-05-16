@@ -20,6 +20,13 @@ if os.getenv("DEBUG") == "true":
 else:
     logging.getLogger().setLevel(logging.INFO)
 
+CHECKIN_STATUS_PARAM = os.environ["CHECKIN_STATUS_PARAM"]
+APPLICATION_ID = os.environ["APPLICATION_ID"]
+ALERT_WEBHOOK = os.environ["ALERT_WEBHOOK"]
+CHALLONGE_API_KEY = os.environ["CHALLONGE_API_KEY"]
+GOOGLE_API_KEY = os.environ["GOOGLE_API_KEY"]
+GOOGLE_SHEET_ID = os.environ["GOOGLE_SHEET_ID"]
+
 
 def get_checkin_status(client, checkin_status_param):
     response = client.get_parameter(Name=checkin_status_param)
@@ -143,7 +150,7 @@ def sort_signups(event, gsheet, challonge):
         return "Cancelled"
 
     teams, solos = gsheet.get_all_checkins()
-    divisions, excluded_teams, excluded_solos = generate_divisions(teams, solos)
+    divisions, _, _, excluded_teams, excluded_solos = generate_divisions(teams, solos)
 
     # TODO add try/except
     # Write divs to team list sheet
@@ -174,13 +181,6 @@ def sort_signups(event, gsheet, challonge):
 
 def lambda_handler(event, context):
     logging.debug(json.dumps(event))
-
-    CHECKIN_STATUS_PARAM = os.environ["CHECKIN_STATUS_PARAM"]
-    APPLICATION_ID = os.environ["APPLICATION_ID"]
-    ALERT_WEBHOOK = os.environ["ALERT_WEBHOOK"]
-    CHALLONGE_API_KEY = os.environ["CHALLONGE_API_KEY"]
-    GOOGLE_API_KEY = os.environ["GOOGLE_API_KEY"]
-    GOOGLE_SHEET_ID = os.environ["GOOGLE_SHEET_ID"]
 
     client = boto3.client("ssm")
     challonge = Challonge(CHALLONGE_API_KEY)

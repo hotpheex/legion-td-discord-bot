@@ -19,9 +19,8 @@ if os.getenv("DEBUG") == "true":
 else:
     logging.getLogger().setLevel(logging.INFO)
 
-global DISCORD_PUBLIC_KEY
-global ALERT_WEBHOOK
-
+DISCORD_PUBLIC_KEY = os.environ["DISCORD_PUBLIC_KEY"]
+ALERT_WEBHOOK = os.environ["ALERT_WEBHOOK"]
 
 # INTERACTION RESPONSE TYPES
 # https://discord.com/developers/docs/interactions/receiving-and-responding#interaction-response-object-interaction-callback-type
@@ -61,9 +60,6 @@ def lambda_handler(event, context):
         "manage": os.environ["LAMBDA_MANAGE"],
         "results": os.environ["LAMBDA_RESULTS"],
     }
-
-    DISCORD_PUBLIC_KEY = os.environ["DISCORD_PUBLIC_KEY"]
-    ALERT_WEBHOOK = os.environ["ALERT_WEBHOOK"]
 
     try:
         if not valid_signature(event):

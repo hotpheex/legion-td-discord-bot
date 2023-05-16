@@ -1,7 +1,7 @@
 import subprocess
 from hashlib import sha512
 from os import path
-from shutil import copytree, copyfile, make_archive
+from shutil import copytree, rmtree, make_archive
 from sys import executable
 
 import awacs.logs as alog
@@ -15,6 +15,9 @@ from troposphere import GetAtt, Sub, Ref
 
 
 def create_upload_deployment_archive(local_path, s3_layer_bucket, lambda_name):
+    if path.exists(f"build/{lambda_name}/archive"):
+        rmtree(f"build/{lambda_name}/archive")
+
     copytree(local_path, f"build/{lambda_name}/archive/handler", dirs_exist_ok=True)
     copytree("src/libs", f"build/{lambda_name}/archive/libs", dirs_exist_ok=True)
 

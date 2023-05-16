@@ -79,7 +79,7 @@ def sceptre_handler(sceptre_user_data):
             Name=Sub("/${AWS::StackName}/checkin-status"),
             Description="Tournament checkin status",
             Type="String",
-            Value="false",
+            Value="disabled",
         )
     )
 

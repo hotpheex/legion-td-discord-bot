@@ -101,7 +101,7 @@ def results(event, context, tournament_id):
     return f":white_check_mark: [Round {latest_match['match']['round']}] `{winning_team_name}` {winning_score}-{losing_score} `{losing_team['participant']['name']}`"
 
 
-def run(event, context):
+def lambda_handler(event, context):
     logging.debug(json.dumps(event))
 
     discord = Discord(APPLICATION_ID, event["token"])

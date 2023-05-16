@@ -12,7 +12,7 @@ class Discord:
         logging.info(f"MESSAGE: {message}")
         res = requests.patch(
             f"https://discord.com/api/webhooks/{self.application_id}/{self.token}/messages/@original",
-            json={"content": message}
+            json={"content": message},
         )
         res.raise_for_status()
         logging.debug(res.status_code)

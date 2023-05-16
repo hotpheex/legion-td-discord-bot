@@ -19,17 +19,12 @@ if os.getenv("DEBUG") == "true":
 else:
     logging.getLogger().setLevel(logging.INFO)
 
-DISCORD_PUBLIC_KEY = os.environ["DISCORD_PUBLIC_KEY"]
-ALERT_WEBHOOK = os.environ["ALERT_WEBHOOK"]
+global DISCORD_PUBLIC_KEY
+global ALERT_WEBHOOK
+
 
 # INTERACTION RESPONSE TYPES
 # https://discord.com/developers/docs/interactions/receiving-and-responding#interaction-response-object-interaction-callback-type
-
-commands = {
-    "checkin": os.environ["LAMBDA_CHECKIN"],
-    "manage": os.environ["LAMBDA_MANAGE"],
-    "results": os.environ["LAMBDA_RESULTS"],
-}
 
 
 def discord_body(status_code, type, message):
@@ -58,8 +53,18 @@ def valid_signature(event):
         return False
 
 
-def run(event, context):
+def lambda_handler(event, context):
     logging.debug(json.dumps(event))
+
+    commands = {
+        "checkin": os.environ["LAMBDA_CHECKIN"],
+        "manage": os.environ["LAMBDA_MANAGE"],
+        "results": os.environ["LAMBDA_RESULTS"],
+    }
+
+    DISCORD_PUBLIC_KEY = os.environ["DISCORD_PUBLIC_KEY"]
+    ALERT_WEBHOOK = os.environ["ALERT_WEBHOOK"]
+
     try:
         if not valid_signature(event):
             return discord_body(200, 2, "Error Validating Discord Signature")
@@ -80,7 +85,11 @@ def run(event, context):
     try:
         # Respond to checkin with FAQ page
         if command == "signup":
-            return discord_body(200, 4, "For signup and other instructions read the FAQ: <https://beta.legiontd2.com/esports/#faq>")
+            return discord_body(
+                200,
+                4,
+                "For signup and other instructions read the FAQ: <https://beta.legiontd2.com/esports/#faq>",
+            )
 
         # Invoke the appropriate lambda
         command_func = commands.get(command)

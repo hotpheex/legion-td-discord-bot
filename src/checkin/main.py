@@ -89,7 +89,7 @@ def checkin(event, checkin_status):
     return f":white_check_mark: `{query_name}` checked in!"
 
 
-def run(event, context):
+def lambda_handler(event, context):
     logging.debug(json.dumps(event))
 
     discord = Discord(APPLICATION_ID, event["token"])

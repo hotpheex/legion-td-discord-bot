@@ -27,11 +27,11 @@ CHECKED_IN_MSG = "Checked In"
 SIGNUP_SHEET = "Sign-up"
 
 DIVISIONS = {
-    1: {"sheet": "Division 1", "challonge": "April2023NovaCupDivision1"},
-    2: {"sheet": "Division 2", "challonge": "April2023NovaCupDivision2"},
-    3: {"sheet": "Division 3", "challonge": "April2023NovaCupDivision3"},
-    4: {"sheet": "Division 4", "challonge": "April2023NovaCupDivision4"},
-    5: {"sheet": "Division 5", "challonge": "April2023NovaCupDivision5"},
+    1: {"sheet": "Division 1", "challonge": "May2023NovaCupDivision1"},
+    2: {"sheet": "Division 2", "challonge": "May2023NovaCupDivision2"},
+    3: {"sheet": "Division 3", "challonge": "May2023NovaCupDivision3"},
+    4: {"sheet": "Division 4", "challonge": "May2023NovaCupDivision4"},
+    5: {"sheet": "Division 5", "challonge": "May2023NovaCupDivision5"},
 }
 
 # Division channels
@@ -57,6 +57,7 @@ RESULTS_CHANNEL_IDS = {
 }
 RESULTS_CHANNEL_IDS["1023401872750547014"] = "a1nhuvjx"  # My bot-test Channel
 
+
 def get_div_sizes(number_of_teams):
     if number_of_teams > 88:
         div3 = 32
@@ -69,5 +70,6 @@ def get_div_sizes(number_of_teams):
         div4 = 16
 
     return [8, 16, div3, div4, 16]
+
 
 MAX_TEAMS = 104

@@ -1,2 +1,3 @@
-requests
 gspread
+requests
+urllib3<2

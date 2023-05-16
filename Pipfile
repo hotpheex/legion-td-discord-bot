@@ -4,9 +4,11 @@ verify_ssl = true
 name = "pypi"
 
 [packages]
-troposphere = "*"
 awacs = "*"
 boto3 = "*"
+sceptre = {extras = ["troposphere"], version = "*"}
+gspread = "*"
+requests = "*"
 
 [dev-packages]
 pytest = "*"
@@ -17,4 +19,4 @@ gspread = "*"
 pytest-env = "*"
 
 [requires]
-python_version = "3.9"
+python_version = "3.10"

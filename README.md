@@ -19,10 +19,12 @@ Runs on Lambda functions exposed via API Gateway written in Troposphere and depl
 Update Discord slash commands:
 
 ```
-python3 scripts/slash_cmds.py <dev | prod>
+scripts/slash_cmds.py <dev | prod>
 ```
 
 Deploy changes:
+
+Make sure dependencies are installed: `pipenv install`
 
 ```
 scripts/deploy.sh <dev | prod>

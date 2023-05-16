@@ -1,0 +1,310 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Outputs:
+  ApiGatewayInvokeUrl:
+    Value: !Sub 'https://${RestApiGateway}.execute-api.${AWS::Region}.amazonaws.com/stage'
+Parameters:
+  AlertWebhook:
+    Description: Exception Alert Discord Webhook
+    NoEcho: true
+    Type: String
+  ChallongeApiKey:
+    Description: Challonge API Credentials
+    NoEcho: true
+    Type: String
+  DiscordApplicationId:
+    Description: Discord Application ID
+    Type: String
+  DiscordPublicKey:
+    Description: Discord Public Key
+    Type: String
+  EnableDebug:
+    Default: 'false'
+    Description: Enable debug logging
+    Type: String
+  GoogleApiKey:
+    Description: Google API Key
+    NoEcho: true
+    Type: String
+  GoogleSheetId:
+    Description: Google Sheet ID
+    Type: String
+Resources:
+  ApiGatewayDeployment:
+    DependsOn: PostMethod
+    Properties:
+      RestApiId: !Ref 'RestApiGateway'
+      StageName: stage
+    Type: AWS::ApiGateway::Deployment
+  LegionTdDiscordBotCheckinLambdaExecutionRole:
+    Properties:
+      AssumeRolePolicyDocument:
+        Statement:
+          - Action:
+              - sts:AssumeRole
+            Effect: Allow
+            Principal:
+              Service:
+                - lambda.amazonaws.com
+      Path: /
+      Policies:
+        - PolicyDocument:
+            Statement:
+              - Action:
+                  - ssm:GetParameter
+                Effect: Allow
+                Resource:
+                  - !Sub 'arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter${SsmParameterCheckinStatus}'
+          PolicyName: legion-td-discord-bot-checkin-use-checkin-status-param
+        - PolicyDocument:
+            Statement:
+              - Action:
+                  - logs:CreateLogGroup
+                  - logs:CreateLogStream
+                  - logs:PutLogEvents
+                Effect: Allow
+                Resource:
+                  - '*'
+          PolicyName: legion-td-discord-bot-checkin-log-to-cloudwatch
+    Type: AWS::IAM::Role
+  LegionTdDiscordBotCheckinLambdaFunction:
+    Properties:
+      Code:
+        S3Bucket: s3-buckets-lambdalayerbucket-1wvx0gjtmchjj
+        S3Key: legion-td-discord-bot-checkin/archive-9f6b922d1e.zip
+      Description: !Sub '${AWS::StackName} legion-td-discord-bot-checkin Function'
+      Environment:
+        Variables:
+          ALERT_WEBHOOK: !Ref 'AlertWebhook'
+          APPLICATION_ID: !Ref 'DiscordApplicationId'
+          CHECKIN_STATUS_PARAM: !Ref 'SsmParameterCheckinStatus'
+          DEBUG: !Ref 'EnableDebug'
+          GOOGLE_API_KEY: !Ref 'GoogleApiKey'
+          GOOGLE_SHEET_ID: !Ref 'GoogleSheetId'
+      Handler: handler/main.lambda_handler
+      Role: !GetAtt 'LegionTdDiscordBotCheckinLambdaExecutionRole.Arn'
+      Runtime: python3.9
+      Timeout: 180
+    Type: AWS::Lambda::Function
+  LegionTdDiscordBotCheckinLambdaInvokeConfig:
+    Properties:
+      FunctionName: !Ref 'LegionTdDiscordBotCheckinLambdaFunction'
+      MaximumRetryAttempts: 0
+      Qualifier: $LATEST
+    Type: AWS::Lambda::EventInvokeConfig
+  LegionTdDiscordBotHandlerLambdaExecutionRole:
+    Properties:
+      AssumeRolePolicyDocument:
+        Statement:
+          - Action:
+              - sts:AssumeRole
+            Effect: Allow
+            Principal:
+              Service:
+                - lambda.amazonaws.com
+      Path: /
+      Policies:
+        - PolicyDocument:
+            Statement:
+              - Action:
+                  - lambda:InvokeFunction
+                Effect: Allow
+                Resource:
+                  - !GetAtt 'LegionTdDiscordBotCheckinLambdaFunction.Arn'
+          PolicyName: legion-td-discord-bot-handler-invoke-checkin-function
+        - PolicyDocument:
+            Statement:
+              - Action:
+                  - lambda:InvokeFunction
+                Effect: Allow
+                Resource:
+                  - !GetAtt 'LegionTdDiscordBotManageLambdaFunction.Arn'
+          PolicyName: legion-td-discord-bot-handler-invoke-manage-function
+        - PolicyDocument:
+            Statement:
+              - Action:
+                  - lambda:InvokeFunction
+                Effect: Allow
+                Resource:
+                  - !GetAtt 'LegionTdDiscordBotResultsLambdaFunction.Arn'
+          PolicyName: legion-td-discord-bot-handler-invoke-results-function
+        - PolicyDocument:
+            Statement:
+              - Action:
+                  - logs:CreateLogGroup
+                  - logs:CreateLogStream
+                  - logs:PutLogEvents
+                Effect: Allow
+                Resource:
+                  - '*'
+          PolicyName: legion-td-discord-bot-handler-log-to-cloudwatch
+    Type: AWS::IAM::Role
+  LegionTdDiscordBotHandlerLambdaFunction:
+    Properties:
+      Code:
+        S3Bucket: s3-buckets-lambdalayerbucket-1wvx0gjtmchjj
+        S3Key: legion-td-discord-bot-handler/archive-67a69bfb05.zip
+      Description: !Sub '${AWS::StackName} legion-td-discord-bot-handler Function'
+      Environment:
+        Variables:
+          ALERT_WEBHOOK: !Ref 'AlertWebhook'
+          DEBUG: !Ref 'EnableDebug'
+          DISCORD_PUBLIC_KEY: !Ref 'DiscordPublicKey'
+          LAMBDA_CHECKIN: !GetAtt 'LegionTdDiscordBotCheckinLambdaFunction.Arn'
+          LAMBDA_MANAGE: !GetAtt 'LegionTdDiscordBotManageLambdaFunction.Arn'
+          LAMBDA_RESULTS: !GetAtt 'LegionTdDiscordBotResultsLambdaFunction.Arn'
+      Handler: handler/main.lambda_handler
+      Role: !GetAtt 'LegionTdDiscordBotHandlerLambdaExecutionRole.Arn'
+      Runtime: python3.9
+      Timeout: 180
+    Type: AWS::Lambda::Function
+  LegionTdDiscordBotHandlerLambdaInvokeConfig:
+    Properties:
+      FunctionName: !Ref 'LegionTdDiscordBotHandlerLambdaFunction'
+      MaximumRetryAttempts: 0
+      Qualifier: $LATEST
+    Type: AWS::Lambda::EventInvokeConfig
+  LegionTdDiscordBotManageLambdaExecutionRole:
+    Properties:
+      AssumeRolePolicyDocument:
+        Statement:
+          - Action:
+              - sts:AssumeRole
+            Effect: Allow
+            Principal:
+              Service:
+                - lambda.amazonaws.com
+      Path: /
+      Policies:
+        - PolicyDocument:
+            Statement:
+              - Action:
+                  - ssm:PutParameter
+                  - ssm:GetParameter
+                Effect: Allow
+                Resource:
+                  - !Sub 'arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter${SsmParameterCheckinStatus}'
+          PolicyName: legion-td-discord-bot-manage-use-checkin-status-param
+        - PolicyDocument:
+            Statement:
+              - Action:
+                  - logs:CreateLogGroup
+                  - logs:CreateLogStream
+                  - logs:PutLogEvents
+                Effect: Allow
+                Resource:
+                  - '*'
+          PolicyName: legion-td-discord-bot-manage-log-to-cloudwatch
+    Type: AWS::IAM::Role
+  LegionTdDiscordBotManageLambdaFunction:
+    Properties:
+      Code:
+        S3Bucket: s3-buckets-lambdalayerbucket-1wvx0gjtmchjj
+        S3Key: legion-td-discord-bot-manage/archive-c307c60408.zip
+      Description: !Sub '${AWS::StackName} legion-td-discord-bot-manage Function'
+      Environment:
+        Variables:
+          ALERT_WEBHOOK: !Ref 'AlertWebhook'
+          APPLICATION_ID: !Ref 'DiscordApplicationId'
+          CHALLONGE_API_KEY: !Ref 'ChallongeApiKey'
+          CHECKIN_STATUS_PARAM: !Ref 'SsmParameterCheckinStatus'
+          DEBUG: !Ref 'EnableDebug'
+          GOOGLE_API_KEY: !Ref 'GoogleApiKey'
+          GOOGLE_SHEET_ID: !Ref 'GoogleSheetId'
+      Handler: handler/main.lambda_handler
+      Role: !GetAtt 'LegionTdDiscordBotManageLambdaExecutionRole.Arn'
+      Runtime: python3.9
+      Timeout: 180
+    Type: AWS::Lambda::Function
+  LegionTdDiscordBotManageLambdaInvokeConfig:
+    Properties:
+      FunctionName: !Ref 'LegionTdDiscordBotManageLambdaFunction'
+      MaximumRetryAttempts: 0
+      Qualifier: $LATEST
+    Type: AWS::Lambda::EventInvokeConfig
+  LegionTdDiscordBotResultsLambdaExecutionRole:
+    Properties:
+      AssumeRolePolicyDocument:
+        Statement:
+          - Action:
+              - sts:AssumeRole
+            Effect: Allow
+            Principal:
+              Service:
+                - lambda.amazonaws.com
+      Path: /
+      Policies:
+        - PolicyDocument:
+            Statement:
+              - Action:
+                  - logs:CreateLogGroup
+                  - logs:CreateLogStream
+                  - logs:PutLogEvents
+                Effect: Allow
+                Resource:
+                  - '*'
+          PolicyName: legion-td-discord-bot-results-log-to-cloudwatch
+    Type: AWS::IAM::Role
+  LegionTdDiscordBotResultsLambdaFunction:
+    Properties:
+      Code:
+        S3Bucket: s3-buckets-lambdalayerbucket-1wvx0gjtmchjj
+        S3Key: legion-td-discord-bot-results/archive-cb4c30ff72.zip
+      Description: !Sub '${AWS::StackName} legion-td-discord-bot-results Function'
+      Environment:
+        Variables:
+          ALERT_WEBHOOK: !Ref 'AlertWebhook'
+          APPLICATION_ID: !Ref 'DiscordApplicationId'
+          CHALLONGE_API_KEY: !Ref 'ChallongeApiKey'
+          DEBUG: !Ref 'EnableDebug'
+          GOOGLE_API_KEY: !Ref 'GoogleApiKey'
+          GOOGLE_SHEET_ID: !Ref 'GoogleSheetId'
+      Handler: handler/main.lambda_handler
+      Role: !GetAtt 'LegionTdDiscordBotResultsLambdaExecutionRole.Arn'
+      Runtime: python3.9
+      Timeout: 180
+    Type: AWS::Lambda::Function
+  LegionTdDiscordBotResultsLambdaInvokeConfig:
+    Properties:
+      FunctionName: !Ref 'LegionTdDiscordBotResultsLambdaFunction'
+      MaximumRetryAttempts: 0
+      Qualifier: $LATEST
+    Type: AWS::Lambda::EventInvokeConfig
+  PostMethod:
+    Properties:
+      AuthorizationType: NONE
+      HttpMethod: POST
+      Integration:
+        IntegrationHttpMethod: POST
+        Type: AWS_PROXY
+        Uri: !Sub
+          - arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${lambdaArn}/invocations
+          - lambdaArn: !GetAtt 'LegionTdDiscordBotHandlerLambdaFunction.Arn'
+      MethodResponses:
+        - ResponseModels:
+            application/json: Empty
+          StatusCode: '200'
+      ResourceId: !GetAtt 'RestApiGateway.RootResourceId'
+      RestApiId: !Ref 'RestApiGateway'
+    Type: AWS::ApiGateway::Method
+  PostMethodPermission:
+    Properties:
+      Action: lambda:InvokeFunction
+      FunctionName: !GetAtt 'LegionTdDiscordBotHandlerLambdaFunction.Arn'
+      Principal: apigateway.amazonaws.com
+      SourceArn: !Sub 'arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${RestApiGateway}/*/POST/'
+    Type: AWS::Lambda::Permission
+  RestApiGateway:
+    Properties:
+      Description: !Sub '${AWS::StackName}-rest-api'
+      EndpointConfiguration:
+        Types:
+          - REGIONAL
+      Name: !Sub '${AWS::StackName}-rest-api'
+    Type: AWS::ApiGateway::RestApi
+  SsmParameterCheckinStatus:
+    Properties:
+      Description: Tournament checkin status
+      Name: !Sub '/${AWS::StackName}/checkin-status'
+      Type: String
+      Value: 'false'
+    Type: AWS::SSM::Parameter

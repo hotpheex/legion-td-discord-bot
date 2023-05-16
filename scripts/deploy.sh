@@ -54,7 +54,8 @@ function deploy_prod {
 
 case "${1}" in
   dev)
-    deploy_dev ;;
+    # deploy_dev ;;
+    pipenv run sceptre --merge-vars launch dev/config.yaml -y ;;
   prod)
     deploy_prod ;;
   *)

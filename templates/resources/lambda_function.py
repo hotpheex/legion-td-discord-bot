@@ -16,8 +16,7 @@ from troposphere import GetAtt, Sub, Ref
 
 def create_upload_deployment_archive(local_path, s3_layer_bucket, lambda_name):
     copytree(local_path, f"build/{lambda_name}/archive/handler", dirs_exist_ok=True)
-    copytree("../src/libs", f"build/{lambda_name}/archive/libs", dirs_exist_ok=True)
-    copyfile("../src/run.py", f"build/{lambda_name}/archive/run.py")
+    copytree("src/libs", f"build/{lambda_name}/archive/libs", dirs_exist_ok=True)
 
     if path.exists(f"build/{lambda_name}/archive/handler/requirements.txt"):
         subprocess.check_call(
@@ -138,7 +137,7 @@ def add(
             Environment=lmd.Environment(Variables=lambda_vars),
             Handler=f"handler/main.lambda_handler",
             Role=GetAtt(iam_lambda_execution_role, "Arn"),
-            Runtime="python3.9",
+            Runtime="python3.10",
             Timeout=lambda_timeout,
         )
     )

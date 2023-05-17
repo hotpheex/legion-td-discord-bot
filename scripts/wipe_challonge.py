@@ -21,22 +21,22 @@ DIVISIONS = {
 for i in range(1, 6):
     tournament_id = DIVISIONS[i]["challonge"]
 
-    try:
-        print(f"resetting {tournament_id}")
-        res = requests.post(
-            f"{BASE_URL}/tournaments/{tournament_id}/reset.json",
-            # params={"api_key": CHALLONGE_API_KEY},
-            headers=HEADERS,
-            data=[
-                ("api_key", CHALLONGE_API_KEY),
-                ("include_participants", 0),
-                ("include_matches", 0),
-            ],
-        )
-        res.raise_for_status()
-        results = res.json()
-    except Exception as err:
-        print(err)
+    # try:
+    #     print(f"resetting {tournament_id}")
+    #     res = requests.post(
+    #         f"{BASE_URL}/tournaments/{tournament_id}/reset.json",
+    #         # params={"api_key": CHALLONGE_API_KEY},
+    #         headers=HEADERS,
+    #         data=[
+    #             ("api_key", CHALLONGE_API_KEY),
+    #             ("include_participants", 0),
+    #             ("include_matches", 0),
+    #         ],
+    #     )
+    #     res.raise_for_status()
+    #     results = res.json()
+    # except Exception as err:
+    #     print(err)
 
     try:
         print(f"clearing {tournament_id}")

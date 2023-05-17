@@ -27,19 +27,12 @@ CHECKED_IN_MSG = "Checked In"
 SIGNUP_SHEET = "Sign-up"
 
 DIVISIONS = {
-    1: {"sheet": "Division 1", "challonge": "t68j2e37"},
-    2: {"sheet": "Division 2", "challonge": "v9uncccy"},
-    3: {"sheet": "Division 3", "challonge": "tf66zw7g"},
-    4: {"sheet": "Division 4", "challonge": "1apsosx6"},
-    5: {"sheet": "Division 5", "challonge": "iamltixa"},
+    1: {"sheet": "Division 1", "challonge": "May2023NovaCupDivision1"},
+    2: {"sheet": "Division 2", "challonge": "May2023NovaCupDivision2"},
+    3: {"sheet": "Division 3", "challonge": "May2023NovaCupDivision3"},
+    4: {"sheet": "Division 4", "challonge": "May2023NovaCupDivision4"},
+    5: {"sheet": "Division 5", "challonge": "May2023NovaCupDivision5"},
 }
-# DIVISIONS = {
-#     1: {"sheet": "Division 1", "challonge": "May2023NovaCupDivision1"},
-#     2: {"sheet": "Division 2", "challonge": "May2023NovaCupDivision2"},
-#     3: {"sheet": "Division 3", "challonge": "May2023NovaCupDivision3"},
-#     4: {"sheet": "Division 4", "challonge": "May2023NovaCupDivision4"},
-#     5: {"sheet": "Division 5", "challonge": "May2023NovaCupDivision5"},
-# }
 
 # Division channels
 CHANNEL_IDS = {
@@ -51,7 +44,7 @@ CHANNEL_IDS = {
     "1086242748388098150": "Sign-up",
 }
 # CHANNEL_IDS["1019583590234849320"] = "Division 5"  # manage-bot channel
-CHANNEL_IDS["1023401872750547014"] = "Division 5"  # My bot-test Channel
+CHANNEL_IDS["1023401872750547014"] = "Division 1"  # My bot-test Channel
 
 
 # Results channels
@@ -62,7 +55,7 @@ RESULTS_CHANNEL_IDS = {
     "935117175767830568": DIVISIONS[4]["challonge"],
     "1086241900845076551": DIVISIONS[5]["challonge"],
 }
-RESULTS_CHANNEL_IDS["1023401872750547014"] = "a1nhuvjx"  # My bot-test Channel
+RESULTS_CHANNEL_IDS["1023401872750547014"] = "t68j2e37"  # My bot-test Channel
 
 
 def get_div_sizes(number_of_teams):

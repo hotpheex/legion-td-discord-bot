@@ -1,6 +1,7 @@
 import json
 import base64
 import gspread
+import logging
 
 from libs.constants import *
 
@@ -22,6 +23,12 @@ class GoogleSheet:
                 return sheet.title
         return False
 
+    def clear_spreadsheets(self):
+        worksheets = self.document.worksheets()
+        for sheet in worksheets:
+            if sheet.title != "Sign-up":
+                sheet.batch_clear(["B2:O200"])
+
     def get_all_checkins(self):
         all_records = self.worksheet.get_values()
 
@@ -32,7 +39,11 @@ class GoogleSheet:
                     "player": row[8],
                     "rating": round(float(row[9])),
                 }
-                if solo not in checked_in_solos:
+                # if solo not in checked_in_solos:
+                if not any(
+                    solo["player"] == checked_solo["player"]
+                    for checked_solo in checked_in_solos
+                ):
                     checked_in_solos.append(solo)
 
         checked_in_teams = []
@@ -44,7 +55,11 @@ class GoogleSheet:
                     "player_2": row[3],
                     "rating": round(float(row[4])),
                 }
-                if team not in checked_in_teams:
+                # if team not in checked_in_teams:
+                if not any(
+                    team["team"] == checked_team["team"]
+                    for checked_team in checked_in_teams
+                ):
                     checked_in_teams.append(team)
 
         return checked_in_teams, checked_in_solos

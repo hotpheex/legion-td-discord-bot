@@ -107,6 +107,19 @@ commands = [
                     }
                 ],
             },
+            {
+                "name": "clear_spreadsheets",
+                "description": "Wipe the Sign-up and Division spreadsheets",
+                "type": 1,
+                "options": [
+                    {
+                        "name": "confirm",
+                        "description": "Are you sure?",
+                        "type": 5,
+                        "required": True,
+                    }
+                ],
+            },
         ],
     },
     {

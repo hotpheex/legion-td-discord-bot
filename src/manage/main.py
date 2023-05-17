@@ -54,14 +54,15 @@ def calculate_team_seed(ratings):
 
 
 def generate_divisions(teams, solos):
-    playing_solos = []
-    excluded_teams = []
-    excluded_solos = []
+    playing_solos, excluded_teams, excluded_solos = [], [], []
 
     # Ensure 8 top rated teams are always in
-    teams_by_rating = sorted(teams, key=lambda x: x["rating"], reverse=True)
     div_1_size = get_div_sizes(MAX_TEAMS)[0]
-    playing_teams = teams_by_rating[0 : div_1_size - 1]
+    playing_teams = sorted(teams, key=lambda x: x["rating"], reverse=True)[
+        0 : div_1_size - 1
+    ]
+
+    logging.debug("include_div1 " + json.dumps(playing_teams))
 
     # Fill with up to MAX_TEAMS teams in order of signup
     for team in teams:
@@ -105,11 +106,9 @@ def generate_divisions(teams, solos):
     else:
         excluded_solos = solos
 
-    # Sort teams into divisions
+    # Sort teams by rating
     sorted_teams = sorted(playing_teams, key=lambda x: x["rating"], reverse=True)
     div_sizes = get_div_sizes(len(sorted_teams))
-
-    # Sort teams into divisions
     divisions = []
     team_index = 0
 
@@ -119,9 +118,13 @@ def generate_divisions(teams, solos):
         if len(sorted_teams) > sum(div_sizes[0:i]):
             last_div_index = i
 
+    logging.debug("last_div_index " + str(last_div_index))
+
     # Fill last division with teams
-    last_div = [sorted_teams[: div_sizes[last_div_index]]]
-    sorted_teams = sorted_teams[div_sizes[last_div_index] :]
+    last_div = [sorted_teams[-div_sizes[last_div_index] :]]
+    sorted_teams = sorted_teams[: -div_sizes[last_div_index]]
+
+    logging.debug("last_div " + json.dumps(last_div))
 
     # Fill other divisions with teams top to bottom
     for i in range(len(div_sizes)):
@@ -150,7 +153,9 @@ def sort_signups(event, gsheet, challonge):
         return "Cancelled"
 
     teams, solos = gsheet.get_all_checkins()
-    divisions, _, _, excluded_teams, excluded_solos = generate_divisions(teams, solos)
+    divisions, playing_teams, _, excluded_teams, excluded_solos = generate_divisions(
+        teams, solos
+    )
 
     # TODO add try/except
     # Write divs to team list sheet
@@ -164,7 +169,7 @@ def sort_signups(event, gsheet, challonge):
     except HTTPError:
         return ":warning: Successfully sorted teams but failed to add all teams to Challonge tournaments"
 
-    message = f":white_check_mark: Teams sorted in GSheets and added to Challonge:\n```Team Signups: {len(teams)}\nSolo Signups: {len(solos)}"
+    message = f":white_check_mark: Teams sorted in GSheets and added to Challonge:\n```Team Signups: {len(teams)}\nSolo Signups: {len(solos)}\nTotal Teams Playing: {len(playing_teams)}\n"
     for i in range(len(divisions)):
         message += f"\nDivision {i+1}: {len(divisions[i])}"
     if excluded_teams:
@@ -199,6 +204,9 @@ def lambda_handler(event, context):
             for player in event["data"]["options"][0]["options"]:
                 ratings.append(player["value"])
             _, message = calculate_team_seed(ratings)
+        elif sub_command == "clear_spreadsheets":
+            gsheet.clear_spreadsheets()
+            message = f":white_check_mark: Sheets Wiped"
         elif sub_command == "sort_signups":
             message = sort_signups(event, gsheet, challonge)
         else:

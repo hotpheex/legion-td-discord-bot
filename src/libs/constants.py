@@ -44,7 +44,7 @@ CHANNEL_IDS = {
     "1086242748388098150": "Sign-up",
 }
 # CHANNEL_IDS["1019583590234849320"] = "Division 5"  # manage-bot channel
-CHANNEL_IDS["1023401872750547014"] = "Division 1"  # My bot-test Channel
+CHANNEL_IDS["1023401872750547014"] = "Division 5"  # My bot-test Channel
 
 
 # Results channels

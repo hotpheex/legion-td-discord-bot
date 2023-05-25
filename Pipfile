@@ -1,0 +1,22 @@
+[[source]]
+url = "https://pypi.org/simple"
+verify_ssl = true
+name = "pypi"
+
+[packages]
+awacs = "*"
+boto3 = "*"
+sceptre = {extras = ["troposphere"], version = "*"}
+gspread = "*"
+requests = "*"
+
+[dev-packages]
+pytest = "*"
+pytest-mock = "*"
+pynacl = "*"
+requests = "*"
+gspread = "*"
+pytest-env = "*"
+
+[requires]
+python_version = "3.10"

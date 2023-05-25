@@ -27,7 +27,7 @@ ALERT_WEBHOOK = os.environ["ALERT_WEBHOOK"]
 
 def checkin(event, checkin_status):
     sub_command = event["data"]["options"][0]["name"]
-    player_name = event["member"]["nick"]
+    player_name = event["member"]["user"]["global_name"]
     if not player_name:
         player_name = event["member"]["user"]["username"]
     channel_id = event["channel_id"]

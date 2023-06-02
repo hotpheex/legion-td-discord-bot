@@ -14,7 +14,7 @@ from botocore.exceptions import ClientError
 from troposphere import GetAtt, Ref, Sub
 
 
-def create_upload_deployment_archive(local_path, s3_layer_bucket, lambda_name):
+def create_upload_deployment_archive(local_path, s3_lambda_bucket, lambda_name):
     if path.exists(f"build/{lambda_name}/archive"):
         rmtree(f"build/{lambda_name}/archive")
 
@@ -46,14 +46,14 @@ def create_upload_deployment_archive(local_path, s3_layer_bucket, lambda_name):
     try:
         # If the object exists, skip the upload
         object_name = f"{lambda_name}/archive-{archive_hash}.zip"
-        s3_client.head_object(Bucket=s3_layer_bucket, Key=object_name)
+        s3_client.head_object(Bucket=s3_lambda_bucket, Key=object_name)
         print(f"'{object_name}' already exists in the bucket")
     except ClientError as e:
         if e.response["Error"]["Code"] == "404":
             # Object does not exist, so upload the file
             s3_client.upload_file(
                 f"build/{lambda_name}/archive.zip",
-                s3_layer_bucket,
+                s3_lambda_bucket,
                 object_name,
             )
             print(f"'{object_name}' uploaded to the bucket")
@@ -65,7 +65,7 @@ def create_upload_deployment_archive(local_path, s3_layer_bucket, lambda_name):
 
 def add(
     template,
-    s3_layer_bucket,
+    s3_lambda_bucket,
     lambda_name,
     local_path,
     lambda_timeout=180,
@@ -73,7 +73,7 @@ def add(
     iam_permissions=[],
 ):
     archive_hash = create_upload_deployment_archive(
-        local_path, s3_layer_bucket, lambda_name
+        local_path, s3_lambda_bucket, lambda_name
     )
 
     cfn_name = lambda_name.replace("-", " ").title().replace(" ", "")
@@ -134,7 +134,7 @@ def add(
         lmd.Function(
             f"{cfn_name}LambdaFunction",
             Code=lmd.Code(
-                S3Bucket=s3_layer_bucket,
+                S3Bucket=s3_lambda_bucket,
                 S3Key=f"{lambda_name}/archive-{archive_hash}.zip",
             ),
             Description=Sub(f"${{AWS::StackName}} {lambda_name} Function"),

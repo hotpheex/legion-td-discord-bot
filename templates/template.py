@@ -3,7 +3,7 @@ import awacs.ssm as assm
 from resources import api_gateway_lambda, lambda_function
 from troposphere import GetAtt, Parameter, Ref, Sub, Template, ssm
 
-s3_layer_bucket = "s3-buckets-lambdalayerbucket-1wvx0gjtmchjj"
+s3_lambda_bucket = "lambda-bucket-8a7c672d"
 lambda_name_prefix = "legion-td-discord-bot"
 
 
@@ -85,7 +85,7 @@ def sceptre_handler(sceptre_user_data):
 
     template, checkin_function_arn = lambda_function.add(
         template,
-        s3_layer_bucket=s3_layer_bucket,
+        s3_lambda_bucket=s3_lambda_bucket,
         lambda_name=f"{lambda_name_prefix}-checkin",
         local_path="src/checkin",
         lambda_vars={
@@ -111,7 +111,7 @@ def sceptre_handler(sceptre_user_data):
 
     template, results_function_arn = lambda_function.add(
         template,
-        s3_layer_bucket=s3_layer_bucket,
+        s3_lambda_bucket=s3_lambda_bucket,
         lambda_name=f"{lambda_name_prefix}-results",
         local_path="src/results",
         lambda_vars={
@@ -127,7 +127,7 @@ def sceptre_handler(sceptre_user_data):
 
     template, manage_function_arn = lambda_function.add(
         template,
-        s3_layer_bucket=s3_layer_bucket,
+        s3_lambda_bucket=s3_lambda_bucket,
         lambda_name=f"{lambda_name_prefix}-manage",
         local_path="src/manage",
         lambda_vars={
@@ -154,7 +154,7 @@ def sceptre_handler(sceptre_user_data):
 
     template, handler_function_arn = lambda_function.add(
         template,
-        s3_layer_bucket=s3_layer_bucket,
+        s3_lambda_bucket=s3_lambda_bucket,
         lambda_name=f"{lambda_name_prefix}-handler",
         local_path="src/handler",
         lambda_vars={

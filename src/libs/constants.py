@@ -27,11 +27,11 @@ CHECKED_IN_MSG = "Checked In"
 SIGNUP_SHEET = "Sign-up"
 
 DIVISIONS = {
-    1: {"sheet": "Division 1", "challonge": "May2023NovaCupDivision1"},
-    2: {"sheet": "Division 2", "challonge": "May2023NovaCupDivision2"},
-    3: {"sheet": "Division 3", "challonge": "May2023NovaCupDivision3"},
-    4: {"sheet": "Division 4", "challonge": "May2023NovaCupDivision4"},
-    5: {"sheet": "Division 5", "challonge": "May2023NovaCupDivision5"},
+    1: {"sheet": "Division 1", "challonge": "June2023NekomataCupDivision1"},
+    2: {"sheet": "Division 2", "challonge": "June2023NekomataCupDivision2"},
+    3: {"sheet": "Division 3", "challonge": "June2023NekomataCupDivision3"},
+    4: {"sheet": "Division 4", "challonge": "June2023NekomataCupDivision4"},
+    5: {"sheet": "Division 5", "challonge": "June2023NekomataCupDivision5"},
 }
 
 # Division channels

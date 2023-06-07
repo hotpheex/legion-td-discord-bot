@@ -1,6 +1,6 @@
 import subprocess
-from hashlib import sha512
-from os import path
+import hashlib
+import os
 from shutil import copytree, make_archive, rmtree
 from sys import executable
 
@@ -13,16 +13,45 @@ from awacs.aws import Allow, PolicyDocument, Principal, Statement
 from botocore.exceptions import ClientError
 from troposphere import GetAtt, Ref, Sub
 
+def create_hash(directory):
+    sha256_hash = hashlib.sha256()
+
+    for root, _, files in os.walk(directory):
+        for names in files:
+            filepath = os.path.join(root, names)
+            try:
+                with open(filepath, "rb") as f:
+                    for byte_block in iter(lambda: f.read(4096), b""):
+                        sha256_hash.update(byte_block)
+            except Exception as e:
+                print("Couldn't open %s" % filepath)
+                print("Exception: %s" % str(e))
+                pass
+    return sha256_hash.hexdigest()[:12]
 
 def create_upload_deployment_archive(local_path, s3_lambda_bucket, lambda_name):
-    if path.exists(f"build/{lambda_name}/archive"):
+    s3_client = boto3.client("s3")
+
+    if os.path.exists(f"build/{lambda_name}/archive"):
         rmtree(f"build/{lambda_name}/archive")
 
     copytree(local_path, f"build/{lambda_name}/archive/handler", dirs_exist_ok=True)
     if lambda_name != "legion-td-discord-bot-handler":
         copytree("src/libs", f"build/{lambda_name}/archive/libs", dirs_exist_ok=True)
 
-    if path.exists(f"build/{lambda_name}/archive/handler/requirements.txt"):
+
+    hash = create_hash(f"build/{lambda_name}/archive")
+
+    try:
+        # If the object exists, skip building
+        object_name = f"{lambda_name}/archive-{hash}.zip"
+        s3_client.head_object(Bucket=s3_lambda_bucket, Key=object_name)
+        print(f"\033[92mSkipping {object_name}...\033[0m")
+        return hash
+    except:
+        print(f"\033[93mBuilding {object_name}...\033[0m")
+
+    if os.path.exists(f"build/{lambda_name}/archive/handler/requirements.txt"):
         subprocess.check_call(
             [
                 executable,
@@ -39,28 +68,18 @@ def create_upload_deployment_archive(local_path, s3_lambda_bucket, lambda_name):
 
     make_archive(f"build/{lambda_name}/archive", "zip", f"build/{lambda_name}/archive")
 
-    with open(f"build/{lambda_name}/archive.zip", "rb") as fh:
-        archive_hash = sha512(fh.read()).hexdigest()[:10]
-
-    s3_client = boto3.client("s3")
     try:
-        # If the object exists, skip the upload
-        object_name = f"{lambda_name}/archive-{archive_hash}.zip"
-        s3_client.head_object(Bucket=s3_lambda_bucket, Key=object_name)
-        print(f"'{object_name}' already exists in the bucket")
-    except ClientError as e:
-        if e.response["Error"]["Code"] == "404":
-            # Object does not exist, so upload the file
-            s3_client.upload_file(
-                f"build/{lambda_name}/archive.zip",
-                s3_lambda_bucket,
-                object_name,
-            )
-            print(f"'{object_name}' uploaded to the bucket")
-        else:
-            raise SystemExit(e)
+        # Object does not exist, so upload the file
+        s3_client.upload_file(
+            f"build/{lambda_name}/archive.zip",
+            s3_lambda_bucket,
+            object_name,
+        )
+        print(f"'{object_name}' uploaded to the bucket")
+    except ClientError as err:
+        raise SystemExit(err)
 
-    return archive_hash
+    return hash
 
 
 def add(

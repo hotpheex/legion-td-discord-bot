@@ -75,7 +75,7 @@ def create_upload_deployment_archive(local_path, s3_lambda_bucket, lambda_name):
             s3_lambda_bucket,
             object_name,
         )
-        print(f"'{object_name}' uploaded to the bucket")
+        print(f"\033[93m'{object_name}' uploaded to the bucket\033[0m")
     except ClientError as err:
         raise SystemExit(err)
 

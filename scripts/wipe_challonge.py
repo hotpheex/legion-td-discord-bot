@@ -11,16 +11,16 @@ HEADERS = {
     "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/106.0.0.0 Safari/537.36"
 }
 
-DIVISIONS = {
-    1: {"sheet": "Division 1", "challonge": "t68j2e37"},
-    2: {"sheet": "Division 2", "challonge": "v9uncccy"},
-    3: {"sheet": "Division 3", "challonge": "tf66zw7g"},
-    4: {"sheet": "Division 4", "challonge": "1apsosx6"},
-    5: {"sheet": "Division 5", "challonge": "iamltixa"},
-}
+DIVISIONS = [
+    {"sheet": "Division 1", "challonge": "t68j2e37"},
+    {"sheet": "Division 2", "challonge": "v9uncccy"},
+    {"sheet": "Division 3", "challonge": "tf66zw7g"},
+    {"sheet": "Division 4", "challonge": "1apsosx6"},
+    {"sheet": "Division 5", "challonge": "iamltixa"},
+]
 
-for i in range(1, 6):
-    tournament_id = DIVISIONS[i]["challonge"]
+for d in DIVISIONS:
+    tournament_id = d["challonge"]
 
     # try:
     #     print(f"resetting {tournament_id}")

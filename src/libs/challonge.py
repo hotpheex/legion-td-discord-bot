@@ -82,22 +82,25 @@ class Challonge:
         return res.json()
 
     def add_participants_to_tournament(self, divisions):
-        for i in range(len(divisions)):
-            tournament_id = DIVISIONS[i + 1]["challonge"]
-            self._get_tournament(DIVISIONS[i + 1]["challonge"])
+        for division in DIVISIONS:
+            tournament_id = division["challonge"]
+            self._get_tournament(tournament_id)
 
             existing_participants = self._get_participants(tournament_id)
-            existing_participant_names = []
-            if existing_participants:
-                for participant in existing_participants:
-                    existing_participant_names.append(
-                        participant["participant"]["name"]
-                    )
+            existing_participant_names = (
+                [
+                    participant["participant"]["name"]
+                    for participant in existing_participants
+                ]
+                if existing_participants
+                else []
+            )
 
-            new_participants = []
-            for team in divisions[i]:
-                if team["team"] not in existing_participant_names:
-                    new_participants.append(team["team"])
+            new_participants = [
+                team["team"]
+                for team in divisions
+                if team["team"] not in existing_participant_names
+            ]
 
             if new_participants:
                 self._add_bulk_participant(tournament_id, new_participants)

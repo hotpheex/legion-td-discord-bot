@@ -19,13 +19,6 @@ if os.getenv("DEBUG") == "true":
 else:
     logging.getLogger().setLevel(logging.INFO)
 
-CHECKIN_STATUS_PARAM = os.environ["CHECKIN_STATUS_PARAM"]
-APPLICATION_ID = os.environ["APPLICATION_ID"]
-ALERT_WEBHOOK = os.environ["ALERT_WEBHOOK"]
-CHALLONGE_API_KEY = os.environ["CHALLONGE_API_KEY"]
-GOOGLE_API_KEY = os.environ["GOOGLE_API_KEY"]
-GOOGLE_SHEET_ID = os.environ["GOOGLE_SHEET_ID"]
-
 
 def get_checkin_status(client, checkin_status_param):
     response = client.get_parameter(Name=checkin_status_param)
@@ -194,18 +187,25 @@ def sort_signups(event, gsheet, challonge):
 def lambda_handler(event, context):
     logging.debug(json.dumps(event))
 
-    client = boto3.client("ssm")
-    challonge = Challonge(CHALLONGE_API_KEY)
-    discord = Discord(APPLICATION_ID, event["token"])
-    gsheet = GoogleSheet(GOOGLE_API_KEY, GOOGLE_SHEET_ID, SIGNUP_SHEET)
-
     try:
+        checkin_status_param = os.environ["CHECKIN_STATUS_PARAM"]
+        application_id = os.environ["APPLICATION_ID"]
+        alert_webhook = os.environ["ALERT_WEBHOOK"]
+        challonge_api_key = os.environ["CHALLONGE_API_KEY"]
+        google_api_key = os.environ["GOOGLE_API_KEY"]
+        google_sheet_id = os.environ["GOOGLE_SHEET_ID"]
+
+        client = boto3.client("ssm")
+        challonge = Challonge(challonge_api_key)
+        discord = Discord(application_id, event["token"])
+        gsheet = GoogleSheet(google_api_key, google_sheet_id, SIGNUP_SHEET)
+
         sub_command = event["data"]["options"][0]["name"]
         if sub_command == "checkin_status":
-            current_status = get_checkin_status(client, CHECKIN_STATUS_PARAM)
+            current_status = get_checkin_status(client, checkin_status_param)
             message = f"Checkins are currently set to `{current_status}`"
         elif sub_command == "checkin_enabled":
-            message = set_checkin_status(client, event, CHECKIN_STATUS_PARAM)
+            message = set_checkin_status(client, event, checkin_status_param)
         elif sub_command == "calculate_seed":
             ratings = []
             for player in event["data"]["options"][0]["options"]:
@@ -221,5 +221,5 @@ def lambda_handler(event, context):
         discord.message_response(message)
     except Exception as e:
         logging.exception(e)
-        discord.exception_alert(ALERT_WEBHOOK, context)
+        discord.exception_alert(alert_webhook, context)
         discord.message_response(":warning: Command failed unexpectedly")

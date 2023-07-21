@@ -26,21 +26,21 @@ COLORS = {
 CHECKED_IN_MSG = "Checked In"
 SIGNUP_SHEET = "Sign-up"
 
-DIVISIONS = {
-    1: {"sheet": "Division 1", "challonge": "May2023NovaCupDivision1"},
-    2: {"sheet": "Division 2", "challonge": "May2023NovaCupDivision2"},
-    3: {"sheet": "Division 3", "challonge": "May2023NovaCupDivision3"},
-    4: {"sheet": "Division 4", "challonge": "May2023NovaCupDivision4"},
-    5: {"sheet": "Division 5", "challonge": "May2023NovaCupDivision5"},
-}
+DIVISIONS = [
+    {"sheet": "Division 1", "challonge": "JuneNekomataCupDivision1"},
+    {"sheet": "Division 2", "challonge": "June2023NekomatCupDivision2"},
+    {"sheet": "Division 3", "challonge": "June2023NekomataCupDivision3"},
+    {"sheet": "Division 4", "challonge": "June2023NekomataCupDivision4"},
+    {"sheet": "Division 5", "challonge": "June2023NekomataCupDivision5"},
+]
 
 # Division channels
 CHANNEL_IDS = {
-    "935115970945613884": DIVISIONS[1]["sheet"],
-    "935116002000240680": DIVISIONS[2]["sheet"],
-    "935116039400857620": DIVISIONS[3]["sheet"],
-    "935116296587202632": DIVISIONS[4]["sheet"],
-    "1086241791155650590": DIVISIONS[5]["sheet"],
+    "935115970945613884": DIVISIONS[0]["sheet"],
+    "935116002000240680": DIVISIONS[1]["sheet"],
+    "935116039400857620": DIVISIONS[2]["sheet"],
+    "935116296587202632": DIVISIONS[3]["sheet"],
+    "1086241791155650590": DIVISIONS[4]["sheet"],
     "1086242748388098150": "Sign-up",
 }
 # CHANNEL_IDS["1019583590234849320"] = "Division 5"  # manage-bot channel
@@ -49,11 +49,11 @@ CHANNEL_IDS["1023401872750547014"] = "Division 5"  # My bot-test Channel
 
 # Results channels
 RESULTS_CHANNEL_IDS = {
-    "935117082931109918": DIVISIONS[1]["challonge"],
-    "935117112500948992": DIVISIONS[2]["challonge"],
-    "935117141592645632": DIVISIONS[3]["challonge"],
-    "935117175767830568": DIVISIONS[4]["challonge"],
-    "1086241900845076551": DIVISIONS[5]["challonge"],
+    "935117082931109918": DIVISIONS[0]["challonge"],
+    "935117112500948992": DIVISIONS[1]["challonge"],
+    "935117141592645632": DIVISIONS[2]["challonge"],
+    "935117175767830568": DIVISIONS[3]["challonge"],
+    "1086241900845076551": DIVISIONS[4]["challonge"],
 }
 RESULTS_CHANNEL_IDS["1023401872750547014"] = "t68j2e37"  # My bot-test Channel
 

@@ -67,25 +67,23 @@ class GoogleSheet:
         return checked_in_teams, checked_in_solos
 
     def write_teams_to_div_sheets(self, divisions):
-        for i in range(len(divisions)):
-            updates = []
-            for o in range(len(divisions[i])):
-                team = divisions[i][o]
-                updates.append(
-                    {
-                        "range": f"B{o+2}:F{o+2}",
-                        "values": [
-                            [
-                                team["team"],
-                                team["player_1"],
-                                team["player_2"],
-                                team["rating"],
-                                CHECKED_IN_MSG,
-                            ]
-                        ],
-                    }
-                )
+        for i, division in enumerate(divisions):
+            updates = [
+                {
+                    "range": f"B{o+2}:F{o+2}",
+                    "values": [
+                        [
+                            team["team"],
+                            team["player_1"],
+                            team["player_2"],
+                            team["rating"],
+                            CHECKED_IN_MSG,
+                        ]
+                    ],
+                }
+                for o, team in enumerate(division)
+            ]
 
-            self.document.worksheet(DIVISIONS[i + 1]["sheet"]).batch_update(updates)
+            self.document.worksheet(DIVISIONS[i]["sheet"]).batch_update(updates)
 
         return True

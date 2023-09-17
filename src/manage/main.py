@@ -159,6 +159,22 @@ def sort_signups(event, gsheet, challonge):
     if not event["data"]["options"][0]["options"][0]["value"]:
         return "Cancelled"
 
+    # Check Challonge ID's are correct
+    missing_challonges = []
+    for division in DIVISIONS.values():
+        tournament = division["challonge"]
+        try:
+            exists = challonge._get_tournament(tournament)
+            if not exists:
+                missing_challonges.append(tournament)
+        except Exception:
+            f_missing = [f"`{challonge}`" for challonge in missing_challonges]
+            missing_challonges.append(tournament)
+
+    if missing_challonges:
+        return f":no_entry: Tournaments are missing in Challonge: {', '.join(f_missing)}"
+
+    # Get checkins from Google Sheets
     teams, solos = gsheet.get_all_checkins()
     divisions, playing_teams, _, excluded_teams, excluded_solos = generate_divisions(
         teams, solos

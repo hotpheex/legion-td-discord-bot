@@ -1,3 +1,5 @@
+import datetime
+
 COLUMNS = {
     "team": {
         "name": 2,
@@ -26,12 +28,18 @@ COLORS = {
 CHECKED_IN_MSG = "Checked In"
 SIGNUP_SHEET = "Sign-up"
 
+def get_month():
+    return datetime.datetime.now().strftime('%B')
+
+def get_year():
+    return datetime.datetime.now().year
+
 DIVISIONS = {
-    1: {"sheet": "Division 1", "challonge": "July2023NovaCupDivision1"},
-    2: {"sheet": "Division 2", "challonge": "July2023NovaCupDivision2"},
-    3: {"sheet": "Division 3", "challonge": "July2023NovaCupDivision3"},
-    4: {"sheet": "Division 4", "challonge": "July2023NovaCupDivision4"},
-    5: {"sheet": "Division 5", "challonge": "July2023NovaCupDivision5"},
+    1: {"sheet": "Division 1", "challonge": f"{get_month()}{get_year()}NovaCupDivision1"},
+    2: {"sheet": "Division 2", "challonge": f"{get_month()}{get_year()}NovaCupDivision2"},
+    3: {"sheet": "Division 3", "challonge": f"{get_month()}{get_year()}NovaCupDivision3"},
+    4: {"sheet": "Division 4", "challonge": f"{get_month()}{get_year()}NovaCupDivision4"},
+    5: {"sheet": "Division 5", "challonge": f"{get_month()}{get_year()}NovaCupDivision5"},
 }
 
 # Division channels

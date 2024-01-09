@@ -67,17 +67,16 @@ RESULTS_CHANNEL_IDS["1023401872750547014"] = "t68j2e37"  # My bot-test Channel
 
 
 def get_div_sizes(number_of_teams):
-    if number_of_teams > 88:
+    if number_of_teams > 80:
         div3 = 32
         div4 = 32
-    elif number_of_teams > 72:
+    elif number_of_teams > 64:
         div3 = 16
         div4 = 32
     else:
         div3 = 16
         div4 = 16
 
-    return [8, 16, div3, div4, 16]
+    return [8, 8, div3, div4, 16]
 
-
-MAX_TEAMS = 104
+MAX_TEAMS = 96

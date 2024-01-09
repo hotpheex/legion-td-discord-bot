@@ -63,13 +63,14 @@ def clear_google_sheets(gsheet, event):
 def generate_divisions(teams, solos):
     playing_solos, excluded_teams, excluded_solos = [], [], []
 
-    # Ensure 8 top rated teams are always in
+    # Ensure 16 top rated teams are always in (div 1 & 2)
     div_1_size = get_div_sizes(MAX_TEAMS)[0]
+    div_2_size = get_div_sizes(MAX_TEAMS)[1]
     playing_teams = sorted(teams, key=lambda x: x["rating"], reverse=True)[
-        0 : div_1_size - 1
+        0 : div_1_size + div_2_size
     ]
 
-    logging.debug("include_div1 " + json.dumps(playing_teams))
+    logging.debug("include_div_1-2 " + json.dumps(playing_teams))
 
     # Fill with up to MAX_TEAMS teams in order of signup
     for team in teams:

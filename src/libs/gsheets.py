@@ -27,6 +27,8 @@ class GoogleSheet:
     def clear_spreadsheets(self, clear_signups=False):
         worksheets = self.document.worksheets()
         for sheet in worksheets:
+            if sheet.title == "Config":
+                continue
             if sheet.title == "Sign-up" and not clear_signups:
                 continue
             sheet.batch_clear(["B2:O200"])

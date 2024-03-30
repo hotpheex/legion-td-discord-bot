@@ -211,12 +211,12 @@ def sort_signups(event, gsheet, challonge):
 def lambda_handler(event, context):
     logging.debug(json.dumps(event))
 
-    client = boto3.client("ssm")
-    challonge = Challonge(CHALLONGE_API_KEY)
-    discord = Discord(APPLICATION_ID, event["token"])
-    gsheet = GoogleSheet(GOOGLE_API_KEY, GOOGLE_SHEET_ID, SIGNUP_SHEET)
-
     try:
+        client = boto3.client("ssm")
+        challonge = Challonge(CHALLONGE_API_KEY)
+        discord = Discord(APPLICATION_ID, event["token"])
+        gsheet = GoogleSheet(GOOGLE_API_KEY, GOOGLE_SHEET_ID, SIGNUP_SHEET)
+
         sub_command = event["data"]["options"][0]["name"]
         if sub_command == "checkin_status":
             current_status = get_checkin_status(client, CHECKIN_STATUS_PARAM)

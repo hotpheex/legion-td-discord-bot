@@ -15,8 +15,6 @@ if os.getenv("DEBUG") == "true":
 else:
     logging.getLogger().setLevel(logging.INFO)
 
-GOOGLE_API_KEY = os.environ["GOOGLE_API_KEY"]
-GOOGLE_SHEET_ID = os.environ["GOOGLE_SHEET_ID"]
 APPLICATION_ID = os.environ["APPLICATION_ID"]
 ALERT_WEBHOOK = os.environ["ALERT_WEBHOOK"]
 CHALLONGE_API_KEY = os.environ["CHALLONGE_API_KEY"]

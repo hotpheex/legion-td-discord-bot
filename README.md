@@ -1,31 +1,58 @@
-# Legion TD Tournament Discord Bot
 
-Serverless Discord bot to help manage [Legion TD 2 Nova Cup tournaments](https://beta.legiontd2.com/esports/#about) in the [Tournament Discord Server](https://discord.gg/GJVRgHrGZV)
-Runs on Lambda functions exposed via API Gateway written in Troposphere and deployed with Sceptre.
+# Welcome to your CDK Python project!
 
-```
-.
-├── cloudformation <= AWS infrastructure as code
-├── scripts        <= CI scripts
-└── src
-    ├── handler    <= Handles initial request & invokes respective lambda
-    ├── checkin    <= Checkin before tournament
-    ├── manage     <= Tournament organiser commands
-    ├── results    <= Report match results
-    ├── libs       <= Shared classes included in all functions
-    └── tests
-```
+This is a blank project for CDK development with Python.
 
-Update Discord slash commands:
+The `cdk.json` file tells the CDK Toolkit how to execute your app.
+
+This project is set up like a standard Python project.  The initialization
+process also creates a virtualenv within this project, stored under the `.venv`
+directory.  To create the virtualenv it assumes that there is a `python3`
+(or `python` for Windows) executable in your path with access to the `venv`
+package. If for any reason the automatic creation of the virtualenv fails,
+you can create the virtualenv manually.
+
+To manually create a virtualenv on MacOS and Linux:
 
 ```
-scripts/slash_cmds.py <dev | prod>
+$ python3 -m venv .venv
 ```
 
-Deploy changes:
-
-Make sure dependencies are installed: `pipenv install`
+After the init process completes and the virtualenv is created, you can use the following
+step to activate your virtualenv.
 
 ```
-scripts/deploy.sh <dev | prod>
+$ source .venv/bin/activate
 ```
+
+If you are a Windows platform, you would activate the virtualenv like this:
+
+```
+% .venv\Scripts\activate.bat
+```
+
+Once the virtualenv is activated, you can install the required dependencies.
+
+```
+$ pip install -r requirements.txt
+```
+
+At this point you can now synthesize the CloudFormation template for this code.
+
+```
+$ cdk synth
+```
+
+To add additional dependencies, for example other CDK libraries, just add
+them to your `setup.py` file and rerun the `pip install -r requirements.txt`
+command.
+
+## Useful commands
+
+ * `cdk ls`          list all stacks in the app
+ * `cdk synth`       emits the synthesized CloudFormation template
+ * `cdk deploy`      deploy this stack to your default AWS account/region
+ * `cdk diff`        compare deployed stack with current state
+ * `cdk docs`        open CDK documentation
+
+Enjoy!

@@ -5,8 +5,7 @@ import boto3
 sqs = boto3.client("sqs")
 
 queue_map = {
-    "join": os.environ["JOIN_QUEUE_URL"],
-    "start": os.environ["START_QUEUE_URL"],
+    "manage": os.environ["MANAGE_QUEUE_URL"],
 }
 
 def main(event, context):
@@ -18,4 +17,4 @@ def main(event, context):
         raise Exception(f"Unknown command: {command}")
 
     sqs.send_message(QueueUrl=queue_url, MessageBody=json.dumps(body))
-    return { "statusCode": 200, "body": "OK" }
+    return {"statusCode": 200, "body": "OK"}

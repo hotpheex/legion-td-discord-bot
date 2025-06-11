@@ -3,11 +3,11 @@ from aws_cdk import (
     aws_sqs as sqs,
     aws_lambda_event_sources as events,
     Duration,
-    Stack,
 )
 from aws_cdk.aws_lambda_python_alpha import PythonLayerVersion
 from constructs import Construct
 
+from .libs.constants import LAMBDA_RUNTIME
 
 class CommandQueue(Construct):
 
@@ -16,11 +16,10 @@ class CommandQueue(Construct):
         scope: Construct,
         id: str,
         *,
-        runtime: str,
         command_name: str,
         handler_path: str,
-        layers: [PythonLayerVersion],
-        handler_env: dict = None,
+        layers: list[PythonLayerVersion] = [],
+        handler_env: dict = {},
         timeout: Duration = Duration.seconds(10),
     ) -> None:
         super().__init__(scope, id)
@@ -40,9 +39,10 @@ class CommandQueue(Construct):
         fn = lamb.Function(
             self,
             f"{command_name}Handler",
-            runtime=runtime,
+            runtime=LAMBDA_RUNTIME,
             handler="handler.main",
             code=lamb.Code.from_asset(handler_path),
+            layers=layers,
             environment=handler_env or {},
             timeout=timeout,
         )

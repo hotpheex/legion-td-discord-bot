@@ -1,2 +1,4 @@
+from libs import constants
+
 def main(event, context):
-    print("MANAGE MANAGE MANAGE MANAGE MANAGE")
+    print(constants.CHECKED_IN_MSG)

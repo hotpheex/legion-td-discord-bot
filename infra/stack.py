@@ -7,10 +7,9 @@ from aws_cdk import (
 )
 from aws_cdk.aws_lambda_python_alpha import PythonLayerVersion
 from constructs import Construct
+
 from .command_queue import CommandQueue
-
-
-LAMBDA_RUNTIME = lamb.Runtime.PYTHON_3_13
+from .libs.constants import LAMBDA_RUNTIME
 
 
 class LegionTdDiscordBotStack(Stack):
@@ -24,6 +23,12 @@ class LegionTdDiscordBotStack(Stack):
             "LibsLayer",
             entry="functions/libs",
             compatible_runtimes=[LAMBDA_RUNTIME],
+            bundling={
+                "command": [
+                    "bash", "-c",
+                    "mkdir -p /asset-output/python/libs && cp *.py /asset-output/python/libs/" #  && touch /asset-output/python/libs/__init__.py
+                ]
+            }
         )
 
         # Shared dispatcher lambda (validates & dispatches)
@@ -34,17 +39,13 @@ class LegionTdDiscordBotStack(Stack):
             handler="handler.main",
             code=lamb.Code.from_asset("functions/dispatcher"),
             layers=[libs_layer],
-            environment={
-                # "JOIN_QUEUE_URL": "<to be filled after creation>",
-                # "START_QUEUE_URL": "<to be filled after creation>",
-            },
+            environment={},
         )
 
         # Command: /manage
         manage_command = CommandQueue(
             self,
             "ManageCommand",
-            runtime=LAMBDA_RUNTIME,
             command_name="manage",
             handler_path="functions/manage",
             layers=[libs_layer],
@@ -70,16 +71,14 @@ class LegionTdDiscordBotStack(Stack):
             path="/interactions",
             methods=[apigwv2.HttpMethod.POST],
             integration=integrations.HttpLambdaIntegration(
-                "DispatchIntegration", dispatcher
+                "DispatchIntegration", lamb.Function.from_function_attributes(
+                    self, "DispatcherRef",
+                    function_arn=dispatcher.function_arn,
+                    same_environment=True
+                )
             ),
         )
 
         self.http_api_url = http_api.url
-    # template.add_output(
-    #     Output(
-    #         "ApiGatewayInvokeUrl",
-    #         Value=Sub(
-    #             f"https://${{RestApiGateway}}.execute-api.${{AWS::Region}}.amazonaws.com/{stage_name}"
-    #         ),
-    #     )
-    # )
+
+        CfnOutput(self, "ApiGatewayInvokeUrl", value=http_api.url or "")

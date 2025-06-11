@@ -1,6 +1,7 @@
 """
 Commands for players to self report results
 """
+
 import json
 import logging
 import os

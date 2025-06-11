@@ -28,18 +28,36 @@ COLORS = {
 CHECKED_IN_MSG = "Checked In"
 SIGNUP_SHEET = "Sign-up"
 
+
 def get_month():
-    return datetime.datetime.now().strftime('%B')
+    return datetime.datetime.now().strftime("%B")
+
 
 def get_year():
     return datetime.datetime.now().year
 
+
 DIVISIONS = {
-    1: {"sheet": "Division 1", "challonge": f"{get_month()}{get_year()}NovaCupDivision1"},
-    2: {"sheet": "Division 2", "challonge": f"{get_month()}{get_year()}NovaCupDivision2"},
-    3: {"sheet": "Division 3", "challonge": f"{get_month()}{get_year()}NovaCupDivision3"},
-    4: {"sheet": "Division 4", "challonge": f"{get_month()}{get_year()}NovaCupDivision4"},
-    5: {"sheet": "Division 5", "challonge": f"{get_month()}{get_year()}NovaCupDivision5"},
+    1: {
+        "sheet": "Division 1",
+        "challonge": f"{get_month()}{get_year()}NovaCupDivision1",
+    },
+    2: {
+        "sheet": "Division 2",
+        "challonge": f"{get_month()}{get_year()}NovaCupDivision2",
+    },
+    3: {
+        "sheet": "Division 3",
+        "challonge": f"{get_month()}{get_year()}NovaCupDivision3",
+    },
+    4: {
+        "sheet": "Division 4",
+        "challonge": f"{get_month()}{get_year()}NovaCupDivision4",
+    },
+    5: {
+        "sheet": "Division 5",
+        "challonge": f"{get_month()}{get_year()}NovaCupDivision5",
+    },
 }
 
 # Division channels
@@ -78,5 +96,6 @@ def get_div_sizes(number_of_teams):
         div4 = 16
 
     return [8, 8, div3, div4, 16]
+
 
 MAX_TEAMS = 96

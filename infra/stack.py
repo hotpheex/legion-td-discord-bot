@@ -1,11 +1,8 @@
-from aws_cdk import (
-    Stack,
-    aws_lambda as lamb,
-    aws_apigatewayv2 as apigwv2,
-    aws_apigatewayv2_integrations as integrations,
-    CfnOutput
-)
-from aws_cdk.aws_lambda_python_alpha import PythonLayerVersion
+from aws_cdk import CfnOutput, Stack
+from aws_cdk import aws_apigatewayv2 as apigwv2
+from aws_cdk import aws_apigatewayv2_integrations as integrations
+from aws_cdk import aws_lambda as lamb
+from aws_cdk.aws_lambda_python_alpha import PythonLayerVersion, PythonFunction
 from constructs import Construct
 
 from .command_queue import CommandQueue
@@ -25,21 +22,30 @@ class LegionTdDiscordBotStack(Stack):
             compatible_runtimes=[LAMBDA_RUNTIME],
             bundling={
                 "command": [
-                    "bash", "-c",
-                    "mkdir -p /asset-output/python/libs && cp *.py /asset-output/python/libs/" #  && touch /asset-output/python/libs/__init__.py
+                    "bash",
+                    "-c",
+                    "mkdir -p /asset-output/python/libs && cp *.py /asset-output/python/libs/",
                 ]
-            }
+            },
         )
 
         # Shared dispatcher lambda (validates & dispatches)
-        dispatcher = lamb.Function(
+        dispatcher = PythonFunction(
             self,
             "DispatcherLambda",
             runtime=LAMBDA_RUNTIME,
             handler="handler.main",
-            code=lamb.Code.from_asset("functions/dispatcher"),
+            entry="functions/dispatcher",
             layers=[libs_layer],
             environment={},
+            bundling={
+                "asset_excludes": [".venv", "tests", "__pycache__", "*.pyc"],
+                "command": [
+                    "bash",
+                    "-c",
+                    "pip install poetry && poetry config virtualenvs.create false && poetry install --no-dev --with lambda-shared,lambda-dispatcher && cp -r . /asset-output/",
+                ],
+            },
         )
 
         # Command: /manage
@@ -71,11 +77,13 @@ class LegionTdDiscordBotStack(Stack):
             path="/interactions",
             methods=[apigwv2.HttpMethod.POST],
             integration=integrations.HttpLambdaIntegration(
-                "DispatchIntegration", lamb.Function.from_function_attributes(
-                    self, "DispatcherRef",
+                "DispatchIntegration",
+                lamb.Function.from_function_attributes(
+                    self,
+                    "DispatcherRef",
                     function_arn=dispatcher.function_arn,
-                    same_environment=True
-                )
+                    same_environment=True,
+                ),
             ),
         )
 

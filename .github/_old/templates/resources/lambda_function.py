@@ -1,6 +1,6 @@
-import subprocess
 import hashlib
 import os
+import subprocess
 from shutil import copytree, make_archive, rmtree
 from sys import executable
 
@@ -12,6 +12,7 @@ import troposphere.iam as iam
 from awacs.aws import Allow, PolicyDocument, Principal, Statement
 from botocore.exceptions import ClientError
 from troposphere import GetAtt, Ref, Sub
+
 
 def create_hash(directory):
     sha256_hash = hashlib.sha256()
@@ -29,6 +30,7 @@ def create_hash(directory):
                 pass
     return sha256_hash.hexdigest()[:12]
 
+
 def create_upload_deployment_archive(local_path, s3_lambda_bucket, lambda_name):
     s3_client = boto3.client("s3")
 
@@ -38,7 +40,6 @@ def create_upload_deployment_archive(local_path, s3_lambda_bucket, lambda_name):
     copytree(local_path, f"build/{lambda_name}/archive/handler", dirs_exist_ok=True)
     if lambda_name != "legion-td-discord-bot-handler":
         copytree("src/libs", f"build/{lambda_name}/archive/libs", dirs_exist_ok=True)
-
 
     hash = create_hash(f"build/{lambda_name}/archive")
 

@@ -1,5 +1,4 @@
 import requests
-
 from libs.constants import *
 
 

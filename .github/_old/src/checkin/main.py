@@ -1,12 +1,12 @@
 """
 Handle checkin command
 """
+
 import json
 import logging
 import os
 
 import boto3
-
 from libs.constants import *
 from libs.discord import Discord
 from libs.gsheets import GoogleSheet

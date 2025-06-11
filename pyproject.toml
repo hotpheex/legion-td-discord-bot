@@ -16,10 +16,25 @@ dependencies = [
 [tool.poetry]
 package-mode = false
 
+# Shared dependencies for all Lambda functions
+[tool.poetry.group.lambda-shared.dependencies]
+requests = "^2.31.0"
+# Add other shared dependencies here
+
+# Dispatcher Lambda specific dependencies
+[tool.poetry.group.lambda-dispatcher.dependencies]
+# Add dispatcher-specific dependencies here
+
+# Manage command Lambda specific dependencies
+[tool.poetry.group.lambda-manage.dependencies]
+# Add manage-specific dependencies here
+
 [tool.poetry.group.dev.dependencies]
 aws-lambda-powertools = {extras = ["aws-sdk"], version = "^3.13.0"}
 pytest = "^8.4.0"
 black = "^25.1.0"
+isort = "^6.0.1"
+flake8 = "^7.2.0"
 
 [build-system]
 requires = ["poetry-core>=2.0.0,<3.0.0"]

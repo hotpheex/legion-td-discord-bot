@@ -1,5 +1,6 @@
-import os
 import json
+import os
+
 import boto3
 
 sqs = boto3.client("sqs")
@@ -7,6 +8,7 @@ sqs = boto3.client("sqs")
 queue_map = {
     "manage": os.environ["MANAGE_QUEUE_URL"],
 }
+
 
 def main(event, context):
     body = json.loads(event["body"])

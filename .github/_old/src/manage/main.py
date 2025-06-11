@@ -1,18 +1,18 @@
 """
 Admin commands to manage tournaments
 """
+
 import json
 import logging
 import math
 import os
 
 import boto3
-from requests.exceptions import HTTPError
-
 from libs.challonge import Challonge
 from libs.constants import *
 from libs.discord import Discord
 from libs.gsheets import GoogleSheet
+from requests.exceptions import HTTPError
 
 if os.getenv("DEBUG") == "true":
     logging.getLogger().setLevel(logging.DEBUG)
@@ -173,7 +173,9 @@ def sort_signups(event, gsheet, challonge):
             missing_challonges.append(tournament)
 
     if missing_challonges:
-        return f":no_entry: Tournaments are missing in Challonge: {', '.join(f_missing)}"
+        return (
+            f":no_entry: Tournaments are missing in Challonge: {', '.join(f_missing)}"
+        )
 
     # Get checkins from Google Sheets
     teams, solos = gsheet.get_all_checkins()

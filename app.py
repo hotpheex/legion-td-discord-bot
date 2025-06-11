@@ -5,7 +5,6 @@ import aws_cdk as cdk
 
 from infra.stack import LegionTdDiscordBotStack
 
-
 app = cdk.App()
 LegionTdDiscordBotStack(
     app,

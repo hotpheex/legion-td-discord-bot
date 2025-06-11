@@ -1,13 +1,12 @@
-from aws_cdk import (
-    aws_lambda as lamb,
-    aws_sqs as sqs,
-    aws_lambda_event_sources as events,
-    Duration,
-)
-from aws_cdk.aws_lambda_python_alpha import PythonLayerVersion
+from aws_cdk import Duration
+from aws_cdk import aws_lambda as lamb
+from aws_cdk import aws_lambda_event_sources as events
+from aws_cdk import aws_sqs as sqs
+from aws_cdk.aws_lambda_python_alpha import PythonLayerVersion, PythonFunction
 from constructs import Construct
 
 from .libs.constants import LAMBDA_RUNTIME
+
 
 class CommandQueue(Construct):
 
@@ -36,15 +35,23 @@ class CommandQueue(Construct):
         )
 
         # Command Lambda
-        fn = lamb.Function(
+        fn = PythonFunction(
             self,
             f"{command_name}Handler",
             runtime=LAMBDA_RUNTIME,
             handler="handler.main",
-            code=lamb.Code.from_asset(handler_path),
+            entry=handler_path,
             layers=layers,
             environment=handler_env or {},
             timeout=timeout,
+            bundling={
+                "asset_excludes": [".venv", "tests", "__pycache__", "*.pyc"],
+                "command": [
+                    "bash",
+                    "-c",
+                    "pip install poetry && poetry config virtualenvs.create false && poetry install --no-dev --with lambda-shared,lambda-${command_name} && cp -r . /asset-output/",
+                ],
+            },
         )
 
         # Lambda trigger on queue

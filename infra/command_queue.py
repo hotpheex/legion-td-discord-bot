@@ -6,7 +6,7 @@ from aws_cdk.aws_lambda_python_alpha import PythonLayerVersion
 from constructs import Construct
 from pathlib import Path
 
-from .libs.constants import LAMBDA_RUNTIME
+from .libs.constants import LAMBDA_RUNTIME, BUILD_DIR
 
 
 class CommandQueue(Construct):
@@ -36,7 +36,7 @@ class CommandQueue(Construct):
         )
 
         # Get the deployment package path
-        deployment_dir = Path(__file__).parent.parent / "deployment" / command_name
+        deployment_dir = BUILD_DIR / command_name
 
         # Command Lambda
         fn = lamb.Function(

@@ -5,11 +5,10 @@ from aws_cdk import aws_lambda as lamb
 from aws_cdk.aws_lambda_python_alpha import PythonLayerVersion, PythonFunction, BundlingOptions
 from aws_cdk import DockerVolume
 from constructs import Construct
-from aws_cdk.aws_lambda import Runtime
 from pathlib import Path
 
 from .command_queue import CommandQueue
-from .libs.constants import LAMBDA_RUNTIME
+from .libs.constants import LAMBDA_RUNTIME, BUILD_DIR
 
 
 class LegionTdDiscordBotStack(Stack):
@@ -33,13 +32,13 @@ class LegionTdDiscordBotStack(Stack):
         )
 
         # Get the deployment package path
-        deployment_dir = Path(__file__).parent.parent / "deployment" / "dispatcher"
+        deployment_dir = BUILD_DIR / "dispatcher"
 
         # Create the Lambda function using the deployment package
         dispatcher = lamb.Function(
             self,
             "DispatcherLambda",
-            runtime=Runtime.PYTHON_3_13,
+            runtime=LAMBDA_RUNTIME,
             handler="handler.handler",
             code=lamb.Code.from_asset(str(deployment_dir)),
             environment={},

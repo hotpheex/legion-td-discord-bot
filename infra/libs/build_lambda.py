@@ -10,7 +10,7 @@ def build_lambda_function(function_name: str):
     function_dir = project_root / "functions" / function_name
     
     # Create a deployment directory
-    deployment_dir = project_root / "deployment" / function_name
+    deployment_dir = project_root / "cdk.build" / function_name
     if deployment_dir.exists():
         shutil.rmtree(deployment_dir)
     deployment_dir.mkdir(parents=True)

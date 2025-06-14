@@ -2,8 +2,11 @@ from aws_cdk import CfnOutput, Stack
 from aws_cdk import aws_apigatewayv2 as apigwv2
 from aws_cdk import aws_apigatewayv2_integrations as integrations
 from aws_cdk import aws_lambda as lamb
-from aws_cdk.aws_lambda_python_alpha import PythonLayerVersion, PythonFunction
+from aws_cdk.aws_lambda_python_alpha import PythonLayerVersion, PythonFunction, BundlingOptions
+from aws_cdk import DockerVolume
 from constructs import Construct
+from aws_cdk.aws_lambda import Runtime
+from pathlib import Path
 
 from .command_queue import CommandQueue
 from .libs.constants import LAMBDA_RUNTIME
@@ -29,23 +32,17 @@ class LegionTdDiscordBotStack(Stack):
             },
         )
 
-        # Shared dispatcher lambda (validates & dispatches)
-        dispatcher = PythonFunction(
+        # Get the deployment package path
+        deployment_dir = Path(__file__).parent.parent / "deployment" / "dispatcher"
+
+        # Create the Lambda function using the deployment package
+        dispatcher = lamb.Function(
             self,
             "DispatcherLambda",
-            runtime=LAMBDA_RUNTIME,
-            handler="handler.main",
-            entry="functions/dispatcher",
-            layers=[libs_layer],
+            runtime=Runtime.PYTHON_3_13,
+            handler="handler.handler",
+            code=lamb.Code.from_asset(str(deployment_dir)),
             environment={},
-            bundling={
-                "asset_excludes": [".venv", "tests", "__pycache__", "*.pyc"],
-                "command": [
-                    "bash",
-                    "-c",
-                    "pip install poetry && poetry config virtualenvs.create false && poetry install --no-dev --with lambda-shared,lambda-dispatcher && cp -r . /asset-output/",
-                ],
-            },
         )
 
         # Command: /manage

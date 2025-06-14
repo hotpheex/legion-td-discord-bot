@@ -2,8 +2,9 @@ from aws_cdk import Duration
 from aws_cdk import aws_lambda as lamb
 from aws_cdk import aws_lambda_event_sources as events
 from aws_cdk import aws_sqs as sqs
-from aws_cdk.aws_lambda_python_alpha import PythonLayerVersion, PythonFunction
+from aws_cdk.aws_lambda_python_alpha import PythonLayerVersion
 from constructs import Construct
+from pathlib import Path
 
 from .libs.constants import LAMBDA_RUNTIME
 
@@ -34,24 +35,19 @@ class CommandQueue(Construct):
             dead_letter_queue=sqs.DeadLetterQueue(max_receive_count=3, queue=dlq),
         )
 
+        # Get the deployment package path
+        deployment_dir = Path(__file__).parent.parent / "deployment" / command_name
+
         # Command Lambda
-        fn = PythonFunction(
+        fn = lamb.Function(
             self,
             f"{command_name}Handler",
             runtime=LAMBDA_RUNTIME,
             handler="handler.main",
-            entry=handler_path,
+            code=lamb.Code.from_asset(str(deployment_dir)),
             layers=layers,
             environment=handler_env or {},
             timeout=timeout,
-            bundling={
-                "asset_excludes": [".venv", "tests", "__pycache__", "*.pyc"],
-                "command": [
-                    "bash",
-                    "-c",
-                    "pip install poetry && poetry config virtualenvs.create false && poetry install --no-dev --with lambda-shared,lambda-${command_name} && cp -r . /asset-output/",
-                ],
-            },
         )
 
         # Lambda trigger on queue

@@ -1,28 +1,17 @@
-.PHONY: test lint format install-lambda-deps install-dev-deps install-all-deps install-dispatcher-deps install-manage-deps
+.PHONY: test lint build-lambda synth
 
 test:
 	poetry run pytest
 
 lint:
-	poetry run black . --check
-	poetry run isort . --check-only
-	poetry run flake8 .
+	poetry run ruff check .
+	poetry run ruff format --check .
 
-format:
-	poetry run black .
-	poetry run isort .
+build-lambda:
+	poetry run python infra/libs/build_lambda.py
 
-install-lambda-deps:
-	poetry install --only lambda-shared
+synth: build-lambda
+	poetry run cdk synth
 
-install-dev-deps:
-	poetry install --only dev
-
-install-all-deps:
-	poetry install --with lambda-shared,dev
-
-install-dispatcher-deps:
-	poetry install --with lambda-shared,lambda-dispatcher
-
-install-manage-deps:
-	poetry install --with lambda-shared,lambda-manage
+%:
+	@:

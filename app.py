@@ -6,10 +6,17 @@ import aws_cdk as cdk
 from infra.stack import LegionTdDiscordBotStack
 
 app = cdk.App()
+
+env = app.node.try_get_context("env") or "dev"
+discord_public_key = app.node.try_get_context(env)["discordPublicKey"]
+
 LegionTdDiscordBotStack(
     app,
     "LegionTdDiscordBotStack",
     env=cdk.Environment(region="us-east-1"),
+    discord_public_key=discord_public_key,
+
+
     # If you don't specify 'env', this stack will be environment-agnostic.
     # Account/Region-dependent features and context lookups will not work,
     # but a single synthesized template can be deployed anywhere.

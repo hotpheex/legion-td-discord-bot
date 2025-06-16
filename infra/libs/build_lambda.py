@@ -4,6 +4,7 @@ import shutil
 import subprocess
 from pathlib import Path
 
+
 def build_lambda_function(function_name: str):
     # Get the project root directory (two levels up from this file)
     project_root = Path(__file__).parent.parent.parent
@@ -42,10 +43,16 @@ def build_lambda_function(function_name: str):
         "--without-hashes"
     ], check=True)
     
-    # Install dependencies using pip
+    # Install dependencies using pip with platform specification for Lambda
     subprocess.run([
         "pip",
         "install",
+        "--platform",
+        "manylinux2014_x86_64",
+        "--implementation",
+        "cp",
+        "--only-binary=:all:",
+        "--upgrade",
         "-r",
         "requirements.txt",
         "--target",

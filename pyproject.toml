@@ -19,6 +19,7 @@ package-mode = false
 [tool.poetry.group.lambda-shared.dependencies]
 requests = "^2.31.0"
 urllib3 = "^2.4.0"
+discord-py = "^2.5.2"
 
 [tool.poetry.group.lambda-dispatcher.dependencies]
 pynacl = "^1.5.0"

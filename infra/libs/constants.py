@@ -1,4 +1,5 @@
 from pathlib import Path
+
 from aws_cdk.aws_lambda import Runtime
 
 # Lambda runtime version

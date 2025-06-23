@@ -66,9 +66,11 @@ def build_lambda_function(function_name: str):
     )
 
     # Clean up temporary files
-    os.remove("requirements.txt")
-    os.remove("pyproject.toml")
-    os.remove("poetry.lock")
+    for file_to_remove in ["requirements.txt", "pyproject.toml", "poetry.lock"]:
+        try:
+            os.remove(file_to_remove)
+        except FileNotFoundError:
+            pass  # File doesn't exist, which is fine
 
     print(f"Built Lambda function {function_name} in {deployment_dir}")
 

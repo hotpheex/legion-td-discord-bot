@@ -1,11 +1,11 @@
 # Command registry for manage subcommands
 
-from .checkin_status import checkin_status
-from .checkin_enabled import checkin_enabled
-from .calculate_seed import calculate_seed
-from .clear_spreadsheets import clear_spreadsheets
-from .sort_signups import sort_signups
-from .discord_alert import discord_alert
+from commands.checkin_status import checkin_status
+from commands.checkin_enabled import checkin_enabled
+from commands.calculate_seed import calculate_seed
+from commands.clear_spreadsheets import clear_spreadsheets
+from commands.sort_signups import sort_signups
+from commands.discord_alert import discord_alert
 
 COMMAND_REGISTRY = {
     "checkin_status": checkin_status,

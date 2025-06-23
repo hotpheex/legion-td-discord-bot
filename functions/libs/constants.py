@@ -30,11 +30,11 @@ SIGNUP_SHEET = "Sign-up"
 
 
 def get_month():
-    return datetime.datetime.now().strftime("%B")
+    return datetime.datetime.now(datetime.UTC).strftime("%B")
 
 
 def get_year():
-    return datetime.datetime.now().year
+    return datetime.datetime.now(datetime.UTC).year
 
 
 DIVISIONS = {

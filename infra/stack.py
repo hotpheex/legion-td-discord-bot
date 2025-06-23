@@ -120,14 +120,14 @@ class LegionTdDiscordBotStack(Stack):
             ],
         )
         # EventBridge rule for manage command
-        events.Rule(
+        manage_rule = events.Rule(
             self,
             "ManageCommandRule",
             event_bus=self.command_bus,
             event_pattern=events.EventPattern(
                 detail={"command": ["manage"]}
             ),
-            targets=[targets.LambdaFunction(self.manage_command.lambda_function)],
+            targets=[targets.LambdaFunction(self.manage_command.lambda_function)],  # type: ignore
         )
 
     def create_dispatcher_lambda(self, ssm_parameters: List[ssm.StringParameter]):

@@ -8,6 +8,12 @@ import pytest
 functions_path = Path(__file__).parent.parent / "functions"
 sys.path.insert(0, str(functions_path))
 
+# Simulate Lambda deployment environment structure
+# In Lambda, the handler.py file is at the root level, so we need to add
+# the manage directory to the path so imports like "from commands import ..." work
+manage_path = functions_path / "manage"
+sys.path.insert(0, str(manage_path))
+
 
 @pytest.fixture(autouse=True)
 def setup_test_env():

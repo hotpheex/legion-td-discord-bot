@@ -16,6 +16,7 @@ from aws_lambda_powertools.utilities.parameters import get_parameter
 from pydantic import BaseModel, ValidationError
 from nacl.exceptions import BadSignatureError
 from nacl.signing import VerifyKey
+from typing import Optional
 
 logger = Logger()
 logger.setLevel("DEBUG")
@@ -24,19 +25,33 @@ eventbridge_client = boto3.client("events")
 
 class DiscordCommand(BaseModel):
     type: int
-    data: dict
-    token: str
+    data: Optional[dict] = None
+    token: Optional[str] = None
 
 # Helper for Discord response
 
 def discord_body(status_code, type, message):
-    logger.debug(f"Status: {status_code}")
-    logger.info(f"Message: {message}")
-    return {
-        "headers": {"Content-Type": "application/json"},
+    payload = {
         "statusCode": status_code,
+        "headers": {"Content-Type": "application/json"},
         "body": json.dumps({"type": type, "data": {"content": message}}),
     }
+    logger.info(f"Return: {json.dumps(payload)}")
+    return payload
+
+def discord_response(type, data=None):
+    """Return a proper Discord interaction response"""
+    response = {"type": type}
+    if data:
+        response["data"] = data
+    
+    payload = {
+        "statusCode": 200,
+        "headers": {"Content-Type": "application/json"},
+        "body": json.dumps(response),
+    }
+    logger.info(f"Return: {json.dumps(payload)}")
+    return payload
 
 def valid_signature(event, discord_public_key):
     body = event.body
@@ -61,7 +76,7 @@ def handler(event, context):
     # Validate signature
     try:
         if not valid_signature(api_event, discord_public_key):
-            return discord_body(200, 2, "Error Validating Discord Signature")
+            return discord_response(2, {"content": "Error Validating Discord Signature"})
     except KeyError:
         return {"statusCode": 200, "body": ""}
 
@@ -70,25 +85,24 @@ def handler(event, context):
         if not api_event.body:
             raise ValueError("Missing request body")
         discord_body_json = json.loads(api_event.body)
-        discord_event = DiscordCommand.parse_obj(discord_body_json)
+        discord_event = DiscordCommand.model_validate(discord_body_json)
     except (ValidationError, Exception) as e:
         logger.exception(e)
-        return discord_body(400, 4, "Invalid Discord command payload")
+        return discord_response(4, {"content": "Invalid Discord command payload"})
 
     # Ping event
     if discord_event.type == 1:
-        return {"statusCode": 200, "body": json.dumps({"type": 1})}
+        return discord_response(1)
 
     # Application command event
     if discord_event.type == 2:
+        if not discord_event.data:
+            return discord_response(4, {"content": "Missing command data"})
+        
         command = discord_event.data.get("name")
         try:
             if command == "signup":
-                return discord_body(
-                    200,
-                    4,
-                    "For signup and other instructions read the FAQ: <https://beta.legiontd2.com/esports/#faq>",
-                )
+                return discord_response(4, {"content": "For signup and other instructions read the FAQ: <https://beta.legiontd2.com/esports/#faq>"})
             # Send the event to EventBridge
             logger.info(f"Sending event to EventBridge bus: {command_bus_name}")
             response = eventbridge_client.put_events(
@@ -98,22 +112,28 @@ def handler(event, context):
                         "DetailType": "DiscordCommand",
                         "Detail": json.dumps({
                             "command": command,
-                            "discord_event": discord_event.dict()
+                            "discord_event": discord_event.model_dump()
                         }),
                         "EventBusName": command_bus_name,
                     }
                 ]
             )
             logger.info(f"EventBridge put_events response: {response}")
-            return discord_body(200, 5, "processing")
+            # Return a deferred response (type 5) - this tells Discord we're processing
+            return discord_response(5)
         except Exception as e:
             logger.exception(e)
+            # Handle case where context might be None in tests
+            context_info = ""
+            if context:
+                context_info = f"`{context.function_name} - {context.log_stream_name}`\n"
+            
             requests.post(
                 alert_webhook,
                 json={
-                    "content": f"`{context.function_name} - {context.log_stream_name}`\n```{traceback.format_exc()}```"
+                    "content": f"{context_info}```{traceback.format_exc()}```"
                 },
             )
-            return discord_body(200, 4, f"Unable to {command}, {e}")
+            return discord_response(4, {"content": f"Unable to {command}, {e}"})
     # Unknown event type
-    return discord_body(400, 4, "Unknown Discord event type")
+    return discord_response(4, {"content": "Unknown Discord event type"})

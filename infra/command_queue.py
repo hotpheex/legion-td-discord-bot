@@ -2,13 +2,14 @@ from pathlib import Path
 from typing import List, Optional
 
 from aws_cdk import Duration
+from aws_cdk import aws_iam as iam
 from aws_cdk import aws_lambda as lamb
 from aws_cdk import aws_lambda_event_sources as events
 from aws_cdk import aws_sqs as sqs
 from aws_cdk import aws_ssm as ssm
 from constructs import Construct
 
-from .libs.constants import BUILD_DIR, LAMBDA_RUNTIME
+from .libs.constants import *
 
 
 class CommandQueue(Construct):
@@ -20,9 +21,10 @@ class CommandQueue(Construct):
         *,
         command_name: str,
         layers: list[lamb.ILayerVersion] = [],
-        handler_env: dict = {},
-        timeout: Duration = Duration.seconds(10),
+        environment: dict = {},
+        timeout: Duration = LAMBDA_TIMEOUT,
         ssm_parameters: Optional[List[ssm.StringParameter]] = None,
+        additional_policies: Optional[List[iam.PolicyStatement]] = None,
     ) -> None:
         super().__init__(scope, id)
 
@@ -40,33 +42,39 @@ class CommandQueue(Construct):
         # Get the deployment package path
         deployment_dir = BUILD_DIR / command_name
 
-        # Add SSM parameters to environment variables
-        env = handler_env.copy()
         if ssm_parameters:
             for param in ssm_parameters:
                 # Use the parameter's logical ID for the environment variable name
                 env_var_name = f"{param.node.id.upper()}_PARAM"
-                print(f"Setting environment variable: {env_var_name} = {param.parameter_name}")
-                env[env_var_name] = param.parameter_name
+                print(
+                    f"Setting environment variable: {env_var_name} = {param.parameter_name}"
+                )
+                environment[env_var_name] = param.parameter_name
 
-        print(f"Final environment variables for {command_name}: {env}")
+        print(f"Final environment variables for {command_name}: {environment}")
 
         # Command Lambda
         function = lamb.Function(
             self,
             f"{command_name}Handler",
             runtime=LAMBDA_RUNTIME,
-            handler="handler.main",
+            handler="handler.handler",
             code=lamb.Code.from_asset(str(deployment_dir)),
             layers=layers,
-            environment=env,
+            environment=environment,
             timeout=timeout,
+            memory_size=256,
         )
 
         # Grant SSM parameter read permissions
         if ssm_parameters:
             for param in ssm_parameters:
                 param.grant_read(function)
+
+        # Add additional policies if provided
+        if additional_policies:
+            for policy in additional_policies:
+                function.add_to_role_policy(policy)
 
         # Lambda trigger on queue
         function.add_event_source(events.SqsEventSource(queue))

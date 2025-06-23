@@ -1,6 +1,5 @@
 import base64
 import json
-import logging
 
 import gspread
 from libs.constants import *
@@ -10,7 +9,7 @@ class GoogleSheet:
     def __init__(self, api_key, document_id, worksheet_id):
         creds = json.loads(base64.b64decode(api_key).decode("utf-8"))
         gc = gspread.service_account_from_dict(
-            creds, client_factory=gspread.BackoffClient
+            creds, http_client=gspread.http_client.BackOffHTTPClient
         )
         self.document = gc.open_by_key(document_id)
         self.worksheet = self.document.worksheet(worksheet_id)

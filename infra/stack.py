@@ -3,27 +3,45 @@ from typing import List, Optional
 from aws_cdk import CfnOutput, Stack
 from aws_cdk import aws_apigatewayv2 as apigwv2
 from aws_cdk import aws_apigatewayv2_integrations as integrations
+from aws_cdk import aws_iam as iam
 from aws_cdk import aws_lambda as lamb
 from aws_cdk import aws_ssm as ssm
-from aws_cdk.aws_lambda_python_alpha import (BundlingOptions, PythonFunction,
-                                             PythonLayerVersion)
+from aws_cdk.aws_lambda_python_alpha import PythonLayerVersion
 from constructs import Construct
 
 from .command_queue import CommandQueue
-from .libs.constants import BUILD_DIR, LAMBDA_RUNTIME
+from .libs.constants import *
 
 
 class LegionTdDiscordBotStack(Stack):
 
-    def __init__(self, scope: Construct, construct_id: str, discord_public_key: str, **kwargs) -> None:
+    def __init__(self, scope: Construct, construct_id: str, **kwargs) -> None:
         super().__init__(scope, construct_id, **kwargs)
+
         # Context
-        self.discord_public_key = discord_public_key
+        env = self.node.try_get_context("env") or "dev"
+        self.application_id = self.node.try_get_context(env)["applicationId"]
+        self.discord_public_key = self.node.try_get_context(env)["discordPublicKey"]
+
         self.insights_arn = self.node.try_get_context("layerInsights")
         self.powertools_arn = self.node.try_get_context("layerPowertools")
 
         # Create SSM Parameters
-        self.alert_webhook = self.create_ssm_parameter("alert_webhook", "Discord Webhook URL for alerts")
+        self.param_alert_webhook = self.create_ssm_parameter(
+            "alert_webhook", "Discord Webhook URL for alerts"
+        )
+        self.param_checkin_status = self.create_ssm_parameter(
+            "checkin_status", "Checkin status for the tournament"
+        )
+        self.param_challonge_api_key = self.create_ssm_parameter(
+            "challonge_api_key", "Challonge API key"
+        )
+        self.param_google_api_key = self.create_ssm_parameter(
+            "google_api_key", "Google API key"
+        )
+        self.param_google_sheet_id = self.create_ssm_parameter(
+            "google_sheet_id", "Google Sheet ID"
+        )
 
         # Create Lambda Layers
         self.lambda_layers = self.create_lambda_layers()
@@ -32,14 +50,15 @@ class LegionTdDiscordBotStack(Stack):
         self.create_command_queues()
 
         # Create Dispatcher Lambda
-        self.dispatcher_lambda = self.create_dispatcher_lambda([self.alert_webhook])
+        self.dispatcher_lambda = self.create_dispatcher_lambda(
+            [self.param_alert_webhook]
+        )
 
         # Grant Lambda Permissions
         self.grant_lambda_permissions([self.manage_command])
 
         # Create HTTP API
         self.http_api = self.create_http_api()
-
 
     def create_lambda_layers(self):
         # Insights Lambda Layer
@@ -69,16 +88,32 @@ class LegionTdDiscordBotStack(Stack):
 
         return [layer_insights, layer_powertools, libs_layer]
 
-
     def create_command_queues(self):
         self.manage_command = CommandQueue(
             self,
             "ManageCommand",
             command_name="manage",
             layers=self.lambda_layers,
-            ssm_parameters=[self.alert_webhook],
+            ssm_parameters=[
+                self.param_alert_webhook,
+                self.param_checkin_status,
+                self.param_challonge_api_key,
+                self.param_google_api_key,
+                self.param_google_sheet_id,
+            ],
+            environment={
+                "APPLICATION_ID": self.application_id,
+            },
+            additional_policies=[
+                iam.PolicyStatement(
+                    effect=iam.Effect.ALLOW,
+                    actions=["ssm:PutParameter"],
+                    resources=[
+                        self.param_checkin_status.parameter_arn,
+                    ],
+                )
+            ],
         )
-
 
     def create_dispatcher_lambda(self, ssm_parameters: List[ssm.StringParameter]):
         dispatcher = lamb.Function(
@@ -89,9 +124,11 @@ class LegionTdDiscordBotStack(Stack):
             code=lamb.Code.from_asset(str(BUILD_DIR / "dispatcher")),
             environment={
                 "DISCORD_PUBLIC_KEY": self.discord_public_key,
-                "ALERT_WEBHOOK_PARAM": self.alert_webhook.parameter_name,
+                "APPLICATION_ID": self.application_id,
+                "ALERT_WEBHOOK_PARAM": self.param_alert_webhook.parameter_name,
                 "MANAGE_QUEUE_URL": self.manage_command.queue.queue_url,
             },
+            timeout=LAMBDA_TIMEOUT,
             layers=self.lambda_layers,
         )
 
@@ -100,7 +137,6 @@ class LegionTdDiscordBotStack(Stack):
             param.grant_read(dispatcher)
 
         return dispatcher
-
 
     def create_http_api(self):
         # HTTP API Gateway
@@ -127,7 +163,7 @@ class LegionTdDiscordBotStack(Stack):
             "ApiGatewayUrl",
             value=http_api.url or "",
             description="The URL of the Discord API Gateway endpoint",
-            export_name="DiscordApiGatewayUrl"
+            export_name="DiscordApiGatewayUrl",
         )
 
     def create_ssm_parameter(self, name: str, description: str) -> ssm.StringParameter:

@@ -8,26 +8,27 @@ import os
 
 import boto3
 from aws_lambda_powertools import Logger
-from aws_lambda_powertools.utilities.parameters import get_parameter
+from libs.ssm_cache import get_ssm_param
 from libs.challonge import Challonge
 from libs.constants import *
 from libs.discord import Discord
 from libs.gsheets import GoogleSheet
 from requests.exceptions import HTTPError
+from .commands import COMMAND_REGISTRY
+from .commands import discord_alert
 
 # Initialize Powertools
 logger = Logger()
 
 logger.setLevel("DEBUG")
 
+# Read environment variables at import time
 CHECKIN_STATUS_PARAM = os.environ["CHECKIN_STATUS_PARAM"]
 APPLICATION_ID = os.environ["APPLICATION_ID"]
-
-ALERT_WEBHOOK = get_parameter(os.environ["ALERT_WEBHOOK_PARAM"])
-CHALLONGE_API_KEY = get_parameter(os.environ["CHALLONGE_API_KEY_PARAM"])
-GOOGLE_API_KEY = get_parameter(os.environ["GOOGLE_API_KEY_PARAM"])
-GOOGLE_SHEET_ID = get_parameter(os.environ["GOOGLE_SHEET_ID_PARAM"])
-
+ALERT_WEBHOOK_PARAM = os.environ["ALERT_WEBHOOK_PARAM"]
+CHALLONGE_API_KEY_PARAM = os.environ["CHALLONGE_API_KEY_PARAM"]
+GOOGLE_API_KEY_PARAM = os.environ["GOOGLE_API_KEY_PARAM"]
+GOOGLE_SHEET_ID_PARAM = os.environ["GOOGLE_SHEET_ID_PARAM"]
 
 def get_checkin_status(client, checkin_status_param):
     response = client.get_parameter(Name=checkin_status_param)
@@ -215,44 +216,40 @@ def sort_signups(event, gsheet, challonge):
 
 def handler(event, context):
     logger.debug(json.dumps(event))
+    detail = event.get('detail', {})
+    body = detail.get('discord_event', {})
+    token = body.get('token')
+    discord = Discord(APPLICATION_ID, token)
 
-    # Initialize clients
+    # Shared clients/utilities
     client = boto3.client("ssm")
-    challonge = Challonge(CHALLONGE_API_KEY)
-    gsheet = GoogleSheet(GOOGLE_API_KEY, GOOGLE_SHEET_ID, SIGNUP_SHEET)
+    challonge = Challonge(get_ssm_param(CHALLONGE_API_KEY_PARAM))
+    gsheet = GoogleSheet(get_ssm_param(GOOGLE_API_KEY_PARAM), get_ssm_param(GOOGLE_SHEET_ID_PARAM), SIGNUP_SHEET)
+    ALERT_WEBHOOK = get_ssm_param(ALERT_WEBHOOK_PARAM)
 
-    # Process each record in the batch
-    for record in event["Records"]:
-        body = json.loads(record["body"])
-        token = body["token"]
-        discord = Discord(APPLICATION_ID, token)
-
-        try:
-            # Parse the SQS message body
-            sub_command = body["data"]["options"][0]["name"]
-
-            # Handle subcommands using match/case
-            match sub_command:
-                case "checkin_status":
-                    current_status = get_checkin_status(client, CHECKIN_STATUS_PARAM)
-                    message = f"Checkins are currently set to `{current_status}`"
-                case "checkin_enabled":
-                    message = set_checkin_status(client, body, CHECKIN_STATUS_PARAM)
-                case "calculate_seed":
-                    ratings = [
-                        player["value"]
-                        for player in body["data"]["options"][0]["options"]
-                    ]
-                    _, message = calculate_team_seed(ratings)
-                case "clear_spreadsheets":
-                    message = clear_google_sheets(gsheet, body)
-                case "sort_signups":
-                    message = sort_signups(body, gsheet, challonge)
-                case _:
-                    raise Exception(f"{sub_command} is not a valid command")
-
-            discord.message_response(message)
-        except Exception as e:
-            logger.exception(e)
-            discord.exception_alert(ALERT_WEBHOOK, context)
-            discord.message_response(":warning: Command failed unexpectedly")
+    try:
+        sub_command = body["data"]["options"][0]["name"]
+        handler_fn = COMMAND_REGISTRY.get(sub_command)
+        if not handler_fn:
+            raise Exception(f"{sub_command} is not a valid command")
+        # Call the subcommand handler, passing all shared clients/utilities and config
+        message = handler_fn(
+            body,
+            client=client,
+            gsheet=gsheet,
+            challonge=challonge,
+            discord=discord,
+            logger=logger,
+            context=context,
+            CHECKIN_STATUS_PARAM=CHECKIN_STATUS_PARAM,
+            APPLICATION_ID=APPLICATION_ID,
+            ALERT_WEBHOOK=ALERT_WEBHOOK,
+        )
+        discord.message_response(message)
+        return message
+    except Exception as e:
+        logger.exception(e)
+        # Call the discord_alert subcommand
+        discord_alert(body, logger=logger, discord=discord, context=context, alert_webhook=ALERT_WEBHOOK)
+        discord.message_response(":warning: Command failed unexpectedly")
+        return ":warning: Command failed unexpectedly"

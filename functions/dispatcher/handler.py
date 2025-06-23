@@ -13,14 +13,21 @@ import boto3
 from aws_lambda_powertools import Logger
 from aws_lambda_powertools.utilities.data_classes import APIGatewayProxyEvent
 from aws_lambda_powertools.utilities.parameters import get_parameter
-from aws_lambda_powertools.utilities.typing import LambdaContext
+from pydantic import BaseModel, ValidationError
 from nacl.exceptions import BadSignatureError
 from nacl.signing import VerifyKey
 
 logger = Logger()
 logger.setLevel("DEBUG")
 
-sqs_client = boto3.client("sqs")
+eventbridge_client = boto3.client("events")
+
+class DiscordCommand(BaseModel):
+    type: int
+    data: dict
+    token: str
+
+# Helper for Discord response
 
 def discord_body(status_code, type, message):
     logger.debug(f"Status: {status_code}")
@@ -31,73 +38,73 @@ def discord_body(status_code, type, message):
         "body": json.dumps({"type": type, "data": {"content": message}}),
     }
 
-
 def valid_signature(event, discord_public_key):
-    body = event["body"]
-    auth_sig = event["headers"]["x-signature-ed25519"]
-    auth_ts = event["headers"]["x-signature-timestamp"]
-
+    body = event.body
+    auth_sig = event.headers["x-signature-ed25519"]
+    auth_ts = event.headers["x-signature-timestamp"]
     message = auth_ts.encode() + body.encode()
-
     try:
         verify_key = VerifyKey(bytes.fromhex(discord_public_key))
         verify_key.verify(message, bytes.fromhex(auth_sig))
-
         return True
     except BadSignatureError as e:
         logger.exception(e)
         return False
 
-
 def handler(event, context):
+    api_event = APIGatewayProxyEvent(event)
     logger.debug(json.dumps(event))
-
     discord_public_key = os.environ["DISCORD_PUBLIC_KEY"]
     alert_webhook = get_parameter(os.environ["ALERT_WEBHOOK_PARAM"])
+    command_bus_name = os.environ["COMMAND_BUS_NAME"]
 
-    commands = {
-        "manage": os.environ["MANAGE_QUEUE_URL"],
-    }
-
+    # Validate signature
     try:
-        if not valid_signature(event, discord_public_key):
+        if not valid_signature(api_event, discord_public_key):
             return discord_body(200, 2, "Error Validating Discord Signature")
     except KeyError:
         return {"statusCode": 200, "body": ""}
 
-    body = json.loads(event["body"])
+    # Parse Discord command using Pydantic
+    try:
+        if not api_event.body:
+            raise ValueError("Missing request body")
+        discord_body_json = json.loads(api_event.body)
+        discord_event = DiscordCommand.parse_obj(discord_body_json)
+    except (ValidationError, Exception) as e:
+        logger.exception(e)
+        return discord_body(400, 4, "Invalid Discord command payload")
 
-    if body["type"] == 1:
+    # Ping event
+    if discord_event.type == 1:
         return {"statusCode": 200, "body": json.dumps({"type": 1})}
 
-    if body["type"] == 2:
-        command = body["data"]["name"]
+    # Application command event
+    if discord_event.type == 2:
+        command = discord_event.data.get("name")
         try:
-
-            # Respond to checkin with FAQ page
             if command == "signup":
                 return discord_body(
                     200,
                     4,
                     "For signup and other instructions read the FAQ: <https://beta.legiontd2.com/esports/#faq>",
                 )
-
-            # Send the event to the appropriate SQS queue
-            queue_url = commands.get(command)
-            if not queue_url:
-                return discord_body(200, 4, f"Unknown command: {command}")
-            logger.info(f"Sending message to queue: {queue_url}")
-            sqs_client.send_message(
-                QueueUrl=queue_url,
-                MessageBody=event["body"],
-                MessageAttributes={
-                    "command": {
-                        "DataType": "String",
-                        "StringValue": command,
+            # Send the event to EventBridge
+            logger.info(f"Sending event to EventBridge bus: {command_bus_name}")
+            response = eventbridge_client.put_events(
+                Entries=[
+                    {
+                        "Source": "legion-td.discord",
+                        "DetailType": "DiscordCommand",
+                        "Detail": json.dumps({
+                            "command": command,
+                            "discord_event": discord_event.dict()
+                        }),
+                        "EventBusName": command_bus_name,
                     }
-                },
+                ]
             )
-            logger.info("Message sent to queue successfully")
+            logger.info(f"EventBridge put_events response: {response}")
             return discord_body(200, 5, "processing")
         except Exception as e:
             logger.exception(e)
@@ -108,3 +115,5 @@ def handler(event, context):
                 },
             )
             return discord_body(200, 4, f"Unable to {command}, {e}")
+    # Unknown event type
+    return discord_body(400, 4, "Unknown Discord event type")

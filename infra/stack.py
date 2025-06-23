@@ -8,8 +8,10 @@ from aws_cdk import aws_lambda as lamb
 from aws_cdk import aws_ssm as ssm
 from aws_cdk.aws_lambda_python_alpha import PythonLayerVersion
 from constructs import Construct
+from aws_cdk import aws_events as events
+from aws_cdk import aws_events_targets as targets
 
-from .command_queue import CommandQueue
+from .command_handler import CommandHandler
 from .libs.constants import *
 
 
@@ -46,16 +48,19 @@ class LegionTdDiscordBotStack(Stack):
         # Create Lambda Layers
         self.lambda_layers = self.create_lambda_layers()
 
-        # Create Command Queues and Functions
-        self.create_command_queues()
+        # Create EventBridge Bus
+        self.command_bus = events.EventBus(self, "DiscordCommandBus")
+
+        # Create Command Handlers and Functions
+        self.create_command_handlers()
 
         # Create Dispatcher Lambda
-        self.dispatcher_lambda = self.create_dispatcher_lambda(
-            [self.param_alert_webhook]
-        )
+        self.dispatcher_lambda = self.create_dispatcher_lambda([
+            self.param_alert_webhook
+        ])
 
-        # Grant Lambda Permissions
-        self.grant_lambda_permissions([self.manage_command])
+        # Grant Dispatcher permission to put events on the bus
+        self.command_bus.grant_put_events_to(self.dispatcher_lambda)
 
         # Create HTTP API
         self.http_api = self.create_http_api()
@@ -88,8 +93,8 @@ class LegionTdDiscordBotStack(Stack):
 
         return [layer_insights, layer_powertools, libs_layer]
 
-    def create_command_queues(self):
-        self.manage_command = CommandQueue(
+    def create_command_handlers(self):
+        self.manage_command = CommandHandler(
             self,
             "ManageCommand",
             command_name="manage",
@@ -114,6 +119,16 @@ class LegionTdDiscordBotStack(Stack):
                 )
             ],
         )
+        # EventBridge rule for manage command
+        events.Rule(
+            self,
+            "ManageCommandRule",
+            event_bus=self.command_bus,
+            event_pattern=events.EventPattern(
+                detail={"command": ["manage"]}
+            ),
+            targets=[targets.LambdaFunction(self.manage_command.lambda_function)],
+        )
 
     def create_dispatcher_lambda(self, ssm_parameters: List[ssm.StringParameter]):
         dispatcher = lamb.Function(
@@ -126,16 +141,13 @@ class LegionTdDiscordBotStack(Stack):
                 "DISCORD_PUBLIC_KEY": self.discord_public_key,
                 "APPLICATION_ID": self.application_id,
                 "ALERT_WEBHOOK_PARAM": self.param_alert_webhook.parameter_name,
-                "MANAGE_QUEUE_URL": self.manage_command.queue.queue_url,
+                "COMMAND_BUS_NAME": self.command_bus.event_bus_name,
             },
             timeout=LAMBDA_TIMEOUT,
             layers=self.lambda_layers,
         )
-
-        # Grant permission to read SSM parameters
         for param in ssm_parameters:
             param.grant_read(dispatcher)
-
         return dispatcher
 
     def create_http_api(self):
@@ -180,6 +192,5 @@ class LegionTdDiscordBotStack(Stack):
 
         return param
 
-    def grant_lambda_permissions(self, lambdas: list[CommandQueue]):
-        for lambda_function in lambdas:
-            lambda_function.queue.grant_send_messages(self.dispatcher_lambda)
+    def grant_lambda_permissions(self, lambdas: list):
+        pass  # No SQS permissions needed

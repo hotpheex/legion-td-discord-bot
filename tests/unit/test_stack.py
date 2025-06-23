@@ -1,17 +1,16 @@
-import aws_cdk as core
-import aws_cdk.assertions as assertions
-
+import pytest
+import aws_cdk as cdk
 from infra.stack import LegionTdDiscordBotStack
 
-
-# example tests. To run these tests, uncomment this file along with the example
-# resource in t/t_stack.py
-def test_sqs_queue_created():
-    app = core.App()
-    stack = LegionTdDiscordBotStack(app, "t")
-    template = assertions.Template.from_stack(stack)
-
-
-#     template.has_resource_properties("AWS::SQS::Queue", {
-#         "VisibilityTimeout": 300
-#     })
+def test_cdk_stack_creation():
+    app = cdk.App()
+    # Set required context for the stack
+    app.node.set_context("dev", {"applicationId": "dummy_app_id", "discordPublicKey": "dummy_key"})
+    app.node.set_context("layerInsights", "dummy_layer_insights")
+    app.node.set_context("layerPowertools", "dummy_layer_powertools")
+    stack = LegionTdDiscordBotStack(app, "TestStack")
+    # Synthesize the stack to ensure it can be created
+    template = app.synth().get_stack_by_name("TestStack").template
+    # Basic sanity check: stack should contain at least one resource
+    assert "Resources" in template
+    assert len(template["Resources"]) > 0

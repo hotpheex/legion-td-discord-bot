@@ -27,10 +27,7 @@ def build_lambda_function(function_name: str):
     shutil.copy2(project_root / "pyproject.toml", deployment_dir)
     shutil.copy2(project_root / "poetry.lock", deployment_dir)
 
-    # Install dependencies directly into the deployment directory
-    os.chdir(deployment_dir)
-
-    # Export dependencies to requirements.txt
+    # Export requirements.txt in the project root
     subprocess.run(
         [
             "poetry",
@@ -40,11 +37,16 @@ def build_lambda_function(function_name: str):
             "--format",
             "requirements.txt",
             "--output",
-            "requirements.txt",
+            str(project_root / "requirements.txt"),
             "--without-hashes",
         ],
         check=True,
+        cwd=project_root,
     )
+
+    # Copy requirements.txt to deployment dir
+    shutil.move(project_root / "requirements.txt", deployment_dir)
+    os.chdir(deployment_dir)
 
     # Install dependencies using pip with platform specification for Lambda
     subprocess.run(
@@ -79,3 +81,5 @@ if __name__ == "__main__":
     # Build all functions
     build_lambda_function("dispatcher")
     build_lambda_function("manage")
+    build_lambda_function("checkin")
+    build_lambda_function("results")

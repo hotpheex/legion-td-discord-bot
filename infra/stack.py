@@ -119,7 +119,38 @@ class LegionTdDiscordBotStack(Stack):
                 )
             ],
         )
-        # EventBridge rule for manage command
+        
+        self.checkin_command = CommandHandler(
+            self,
+            "CheckinCommand",
+            command_name="checkin",
+            layers=self.lambda_layers,
+            ssm_parameters=[
+                self.param_alert_webhook,
+                self.param_checkin_status,
+                self.param_google_api_key,
+                self.param_google_sheet_id,
+            ],
+            environment={
+                "APPLICATION_ID": self.application_id,
+            },
+        )
+        
+        self.results_command = CommandHandler(
+            self,
+            "ResultsCommand",
+            command_name="results",
+            layers=self.lambda_layers,
+            ssm_parameters=[
+                self.param_alert_webhook,
+                self.param_challonge_api_key,
+            ],
+            environment={
+                "APPLICATION_ID": self.application_id,
+            },
+        )
+        
+        # EventBridge rules for commands
         manage_rule = events.Rule(
             self,
             "ManageCommandRule",
@@ -128,6 +159,26 @@ class LegionTdDiscordBotStack(Stack):
                 detail={"command": ["manage"]}
             ),
             targets=[targets.LambdaFunction(self.manage_command.lambda_function)],  # type: ignore
+        )
+        
+        checkin_rule = events.Rule(
+            self,
+            "CheckinCommandRule",
+            event_bus=self.command_bus,
+            event_pattern=events.EventPattern(
+                detail={"command": ["checkin"]}
+            ),
+            targets=[targets.LambdaFunction(self.checkin_command.lambda_function)],  # type: ignore
+        )
+        
+        results_rule = events.Rule(
+            self,
+            "ResultsCommandRule",
+            event_bus=self.command_bus,
+            event_pattern=events.EventPattern(
+                detail={"command": ["results"]}
+            ),
+            targets=[targets.LambdaFunction(self.results_command.lambda_function)],  # type: ignore
         )
 
     def create_dispatcher_lambda(self, ssm_parameters: List[ssm.StringParameter]):

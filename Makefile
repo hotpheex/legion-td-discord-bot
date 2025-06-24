@@ -1,5 +1,9 @@
 .PHONY: test lint build-lambda synth
 
+setup:
+	poetry install
+	poetry self add poetry-plugin-export
+
 test:
 	poetry run pytest --ignore=cdk.out --ignore=cdk.build
 
@@ -15,5 +19,6 @@ synth: build-lambda
 
 deploy: build-lambda
 	poetry run cdk deploy --require-approval never
+
 %:
 	@:

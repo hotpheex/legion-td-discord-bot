@@ -101,9 +101,7 @@ def handler(event, context):
         
         command = discord_event.data.get("name")
         try:
-            if command == "signup":
-                return discord_response(4, {"content": "For signup and other instructions read the FAQ: <https://beta.legiontd2.com/esports/#faq>"})
-            # Send the event to EventBridge
+            # Send the event to EventBridge for all commands
             logger.info(f"Sending event to EventBridge bus: {command_bus_name}")
             response = eventbridge_client.put_events(
                 Entries=[

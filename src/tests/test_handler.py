@@ -1,104 +1,71 @@
-# import json
-# import os
-# from unittest.mock import patch
-# import pytest
+"""
+Characterization tests for the front-door `handler`.
 
-# import nacl.signing
-# from nacl.encoding import HexEncoder
-# from nacl.exceptions import BadSignatureError
-# from nacl.public import PrivateKey
-# import boto3
+These pin the *current* behaviour of the unmodified handler: Discord
+ed25519 signature verification (the Discord boundary) and the pure
+`discord_body` response shaper.
 
-# from handler import main
+No test makes a real network or API call.
+"""
+import json
+from unittest.mock import patch
 
+import nacl.signing
 
-# private_key = PrivateKey.generate()
-
-# event = {
-#     "body": "",
-#     "headers": {"x-signature-ed25519": "", "x-signature-timestamp": ""},
-# }
+from handler import main
 
 
-# @pytest.fixture(autouse=True)
-# def env_setup(monkeypatch):
-#     monkeypatch.setenv("DISCORD_PUBLIC_KEY", hex(private_key.public_key))
-#     monkeypatch.setenv("LAMBDA_CHECKIN", "lambda_checkin")
-#     monkeypatch.setenv("LAMBDA_MANAGE", "lambda_manage")
-#     monkeypatch.setenv("LAMBDA_RESULTS", "lambda_results")
-#     monkeypatch.setenv("ALERT_WEBHOOK", "WEBHOOK")
+def _signed_event(signing_key, body, timestamp="1700000000"):
+    """Produce an event whose ed25519 signature is valid for `signing_key`."""
+    signature = signing_key.sign(
+        (timestamp + body).encode()
+    ).signature.hex()
+    return {
+        "body": body,
+        "headers": {
+            "x-signature-ed25519": signature,
+            "x-signature-timestamp": timestamp,
+        },
+    }
 
 
-# def test_valid_signature():
-#     body = '{"type": 1}'
-#     event["body"] = body
-#     signed_message = (event["headers"]["x-signature-timestamp"] + body).encode()
-#     vk = nacl.signing.VerifyKey(os.environ["DISCORD_PUBLIC_KEY"], encoder=HexEncoder)
-#     signature = vk.sign(signed_message).signature.hex()
-#     event["headers"]["x-signature-ed25519"] = signature
-#     valid = main.run.valid_signature(event)
-#     assert valid == True
+def test_discord_body_shape():
+    response = main.discord_body(200, 2, "test message")
+    assert response == {
+        "statusCode": 200,
+        "body": json.dumps(
+            {"type": 2, "data": {"tts": False, "content": "test message"}}
+        ),
+    }
 
 
-# def test_invalid_signature():
-#     body = '{"type": 1}'
-#     event["body"] = body
-#     event["headers"]["x-signature-ed25519"] = "invalid_signature"
-#     valid = main.run.valid_signature(event)
-#     assert valid == False
+def test_valid_signature_accepts_correctly_signed_request():
+    signing_key = nacl.signing.SigningKey.generate()
+    public_key_hex = signing_key.verify_key.encode().hex()
+    body = '{"type": 1}'
+    event = _signed_event(signing_key, body)
+
+    with patch.object(main, "DISCORD_PUBLIC_KEY", public_key_hex):
+        assert main.valid_signature(event) is True
 
 
-# def test_discord_body():
-#     message = "test message"
-#     response = main.run.discord_body(200, 2, message)
-#     expected_response = {
-#         "statusCode": 200,
-#         "body": json.dumps({"type": 2, "data": {"tts": False, "content": message}}),
-#     }
-#     assert response == expected_response
+def test_valid_signature_rejects_tampered_body():
+    signing_key = nacl.signing.SigningKey.generate()
+    public_key_hex = signing_key.verify_key.encode().hex()
+    event = _signed_event(signing_key, '{"type": 1}')
+    # Tamper with the body after signing -> signature no longer matches.
+    event["body"] = '{"type": 2}'
+
+    with patch.object(main, "DISCORD_PUBLIC_KEY", public_key_hex):
+        assert main.valid_signature(event) is False
 
 
-# @patch.dict(os.environ, {"DEBUG": "true"})
-# def test_logging_debug_level():
-#     assert main.run.logging.getLogger().getEffectiveLevel() == 10
+def test_valid_signature_rejects_garbage_signature():
+    signing_key = nacl.signing.SigningKey.generate()
+    public_key_hex = signing_key.verify_key.encode().hex()
+    event = _signed_event(signing_key, '{"type": 1}')
+    # 64-byte hex string that is not a valid signature for this message.
+    event["headers"]["x-signature-ed25519"] = "00" * 64
 
-
-# @patch.dict(os.environ, {"DEBUG": "false"})
-# def test_logging_info_level():
-#     assert main.run.logging.getLogger().getEffectiveLevel() == 20
-
-
-# @patch("boto3.client")
-# def test_invoke_lambda(mocked_lambda_client):
-#     event["body"] = '{"type": 2, "data": {"name": "manage"}}'
-#     command_func = "lambda_manage"
-#     response = {"StatusCode": 202}
-#     mocked_lambda_client.return_value.invoke.return_value = response
-#     result = main.run.run(event, None)
-#     mocked_lambda_client.assert_called_once()
-#     mocked_lambda_client.assert_called_with("lambda")
-#     assert result["statusCode"] == 200
-#     assert result["body"] == json.dumps(
-#         {"type": 5, "data": {"tts": False, "content": "processing"}}
-#     )
-
-
-# def test_handle_signup_command():
-#     event["body"] = '{"type": 2, "data": {"name": "signup"}}'
-#     result = main.run.run(event, None)
-#     assert result["statusCode"] == 200
-#     assert "FAQ" in result["body"]
-
-
-# def test_handle_invalid_command():
-#     event["body"] = '{"type": 2, "data": {"name": "invalid_command"}}'
-#     result = main.run.run(event, None)
-#     assert result["statusCode"] == 200
-#     assert "Unable to" in result["body"]
-
-
-# def test_handle_type1_command():
-#     event["body"] = '{"type": 1}'
-#     result = main.run.run(event, None)
-#     assert result["statusCode"] == 200
-#     assert result["body"] == json.dumps({"type": 1})
+    with patch.object(main, "DISCORD_PUBLIC_KEY", public_key_hex):
+        assert main.valid_signature(event) is False

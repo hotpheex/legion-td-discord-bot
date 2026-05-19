@@ -127,6 +127,25 @@ def test_checkin_handler_skips_platform_when_checkins_disabled(
 @patch("checkin.main.boto3")
 @patch("checkin.main.Discord")
 @patch("checkin.main.checkin")
+def test_checkin_handler_skips_platform_on_non_success(
+    mock_checkin, mock_discord_cls, mock_boto3, mock_post
+):
+    """A failed check-in (e.g. team not found) returns a `:no_entry:`
+    message -- nothing is mirrored to the platform."""
+    mock_checkin.return_value = ":no_entry: `Ghost` not found in the `Sign-up` sheet"
+    mock_boto3.client.return_value.get_parameter.return_value = {
+        "Parameter": {"Value": "day_1"}
+    }
+
+    checkin_main.lambda_handler(_team_checkin_event(team_name="Ghost"), MagicMock())
+
+    mock_post.assert_not_called()
+
+
+@patch("checkin.main.post_to_platform")
+@patch("checkin.main.boto3")
+@patch("checkin.main.Discord")
+@patch("checkin.main.checkin")
 def test_checkin_handler_unaffected_by_bridge_failure(
     mock_checkin, mock_discord_cls, mock_boto3, mock_post
 ):

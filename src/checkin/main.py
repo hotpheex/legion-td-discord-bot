@@ -129,16 +129,22 @@ def lambda_handler(event, context):
         logging.debug(response)
         checkin_status = response["Parameter"]["Value"]
 
+        checkin_succeeded = False
         if checkin_status == "disabled":
             message = f":no_entry: Tournament checkins are not currently open"
         else:
             message = checkin(event, checkin_status)
+            # `checkin()` returns a `:white_check_mark:`-prefixed string only
+            # on the success path; every failure mode returns `:no_entry:`.
+            checkin_succeeded = message.startswith(":white_check_mark:")
 
         discord.message_response(message)
 
         # Parallel-run bridge: mirror the check-in to the new platform AFTER
-        # the Discord reply. Fail-open -- never affects the handler.
-        if checkin_status != "disabled":
+        # the Discord reply. Only fires for check-ins that actually happened,
+        # consistent with the `results`/`sort` hooks. Fail-open -- never
+        # affects the handler.
+        if checkin_succeeded:
             try:
                 post_to_platform(
                     "/legacy/checkin", build_checkin_payload(event, checkin_status)

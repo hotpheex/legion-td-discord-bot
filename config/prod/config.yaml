@@ -8,3 +8,5 @@ parameters:
   GoogleSheetId: {{ environment_variable.GOOGLE_SHEET_ID_PROD }}
   ChallongeApiKey: {{ environment_variable.CHALLONGE_API_KEY }}
   AlertWebhook: {{ environment_variable.ALERT_WEBHOOK }}
+  PlatformBaseUrl: {{ environment_variable.PLATFORM_BASE_URL_PROD }}
+  LegacyBridgeSecret: {{ environment_variable.LEGACY_BRIDGE_SECRET }}

@@ -13,6 +13,7 @@ from libs.challonge import Challonge
 from libs.constants import *
 from libs.discord import Discord
 from libs.gsheets import GoogleSheet
+from libs.platform import post_to_platform
 
 if os.getenv("DEBUG") == "true":
     logging.getLogger().setLevel(logging.DEBUG)
@@ -156,7 +157,15 @@ def generate_divisions(teams, solos):
     )
 
 
-def sort_signups(event, gsheet, challonge):
+def sort_signups(event, gsheet, challonge, divisions_out=None):
+    """Sort tournament sign-ups into divisions.
+
+    `divisions_out`, when given, is a mutable list the function appends the
+    generated division layout to. It lets `lambda_handler` mirror the sorted
+    divisions to the parallel-run platform bridge *without* changing the
+    return value or any existing behaviour -- the three-argument calls in the
+    characterization suite are unaffected.
+    """
     if not event["data"]["options"][0]["options"][0]["value"]:
         return "Cancelled"
 
@@ -180,6 +189,9 @@ def sort_signups(event, gsheet, challonge):
     divisions, playing_teams, _, excluded_teams, excluded_solos = generate_divisions(
         teams, solos
     )
+
+    if divisions_out is not None:
+        divisions_out.extend(divisions)
 
     # TODO add try/except
     # Write divs to team list sheet
@@ -208,6 +220,32 @@ def sort_signups(event, gsheet, challonge):
     return message
 
 
+def build_sort_payload(divisions):
+    """Build the `/legacy/sort` bridge payload from the division layout.
+
+    `divisions` is the list-of-lists `generate_divisions` produced; each
+    inner list is already in seed order (descending rating), so the payload
+    preserves that order per division.
+    """
+    return {
+        "divisions": [
+            {
+                "division_number": i + 1,
+                "teams": [
+                    {
+                        "team_name": team["team"],
+                        "player_1": team["player_1"],
+                        "player_2": team["player_2"],
+                        "rating": team["rating"],
+                    }
+                    for team in division
+                ],
+            }
+            for i, division in enumerate(divisions)
+        ]
+    }
+
+
 def lambda_handler(event, context):
     logging.debug(json.dumps(event))
 
@@ -217,6 +255,7 @@ def lambda_handler(event, context):
         discord = Discord(APPLICATION_ID, event["token"])
         gsheet = GoogleSheet(GOOGLE_API_KEY, GOOGLE_SHEET_ID, SIGNUP_SHEET)
 
+        sort_divisions = []
         sub_command = event["data"]["options"][0]["name"]
         if sub_command == "checkin_status":
             current_status = get_checkin_status(client, CHECKIN_STATUS_PARAM)
@@ -231,11 +270,20 @@ def lambda_handler(event, context):
         elif sub_command == "clear_spreadsheets":
             message = clear_google_sheets(gsheet, event)
         elif sub_command == "sort_signups":
-            message = sort_signups(event, gsheet, challonge)
+            message = sort_signups(event, gsheet, challonge, sort_divisions)
         else:
             raise Exception(f"{sub_command} is not a valid command")
 
         discord.message_response(message)
+
+        # Parallel-run bridge: mirror the sorted divisions to the new
+        # platform AFTER the Discord reply. Only fires when `sort_signups`
+        # actually produced a division layout. Fail-open.
+        if sub_command == "sort_signups" and sort_divisions:
+            try:
+                post_to_platform("/legacy/sort", build_sort_payload(sort_divisions))
+            except Exception as bridge_error:  # noqa: BLE001 -- belt-and-braces
+                logging.warning("Platform bridge hook failed: %s", bridge_error)
     except Exception as e:
         logging.exception(e)
         discord.exception_alert(ALERT_WEBHOOK, context)

@@ -9,6 +9,7 @@ from pathlib import Path
 from libs.challonge import Challonge
 from libs.constants import *
 from libs.discord import Discord
+from libs.platform import post_to_platform
 
 if os.getenv("DEBUG") == "true":
     logging.getLogger().setLevel(logging.DEBUG)
@@ -36,7 +37,16 @@ def find_losing_team_id(participants, id):
         return None
 
 
-def results(event, context, tournament_id):
+def results(event, context, tournament_id, result_out=None):
+    """Record a self-reported match result on Challonge.
+
+    `result_out`, when given, is a mutable dict the function populates on the
+    success path with the recorded `winning_team_name`, `winning_score` and
+    `losing_score`. It lets `lambda_handler` mirror a confirmed result to the
+    parallel-run platform bridge without changing the return value or any
+    existing behaviour -- the three-argument calls in the characterization
+    suite are unaffected.
+    """
     winning_team = event["data"]["options"][0]["value"]
     winning_score = event["data"]["options"][1]["value"]
     losing_score = event["data"]["options"][2]["value"]
@@ -127,6 +137,16 @@ def results(event, context, tournament_id):
     )
 
     losing_team = challonge._get_participant(tournament_id, losing_team_id)
+
+    if result_out is not None:
+        result_out.update(
+            {
+                "winning_team_name": winning_team_name,
+                "winning_score": winning_score,
+                "losing_score": losing_score,
+            }
+        )
+
     return f":white_check_mark: [Round {latest_match['match']['round']}] `{winning_team_name}` {winning_score}-{losing_score} `{losing_team['participant']['name']}`"
 
 
@@ -139,8 +159,18 @@ def lambda_handler(event, context):
         channel_id = event["channel_id"]
         tournament_id = RESULTS_CHANNEL_IDS[channel_id]
 
-        message = results(event, context, tournament_id)
+        recorded_result = {}
+        message = results(event, context, tournament_id, recorded_result)
         discord.message_response(message)
+
+        # Parallel-run bridge: mirror a confirmed result to the new platform
+        # AFTER the Discord reply. `recorded_result` is only populated on the
+        # success path (a score was actually recorded). Fail-open.
+        if recorded_result:
+            try:
+                post_to_platform("/legacy/results", recorded_result)
+            except Exception as bridge_error:  # noqa: BLE001 -- belt-and-braces
+                logging.warning("Platform bridge hook failed: %s", bridge_error)
     except Exception as e:
         logging.exception(e)
         discord.exception_alert(ALERT_WEBHOOK, context)

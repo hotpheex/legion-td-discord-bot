@@ -10,6 +10,7 @@ import boto3
 from libs.constants import *
 from libs.discord import Discord
 from libs.gsheets import GoogleSheet
+from libs.platform import post_to_platform
 
 # Google SA setup: https://docs.gspread.org/en/latest/oauth2.html#for-bots-using-service-account
 
@@ -93,6 +94,29 @@ def checkin(event, checkin_status):
     return f":white_check_mark: `{query_name}` checked in!"
 
 
+def build_checkin_payload(event, checkin_status):
+    """Build the `/legacy/checkin` bridge payload from a check-in event.
+
+    Mirrors how `checkin()` itself reads the event: a `team` sub-command
+    carries a team name; a `solo` sub-command carries a player name (with
+    the same nick -> global_name -> username fallback) and, when available,
+    the interaction's Discord user id to bootstrap Player identity.
+    """
+    sub_command = event["data"]["options"][0]["name"]
+    if sub_command == "team":
+        team_name = event["data"]["options"][0]["options"][0]["value"]
+        return {"team_name": team_name, "day": checkin_status}
+
+    member = event.get("member", {})
+    user = member.get("user", {})
+    player_name = member.get("nick") or user.get("global_name") or user.get("username")
+    payload = {"player_name": player_name, "day": checkin_status}
+    discord_user_id = user.get("id")
+    if discord_user_id:
+        payload["discord_user_id"] = discord_user_id
+    return payload
+
+
 def lambda_handler(event, context):
     logging.debug(json.dumps(event))
 
@@ -111,6 +135,16 @@ def lambda_handler(event, context):
             message = checkin(event, checkin_status)
 
         discord.message_response(message)
+
+        # Parallel-run bridge: mirror the check-in to the new platform AFTER
+        # the Discord reply. Fail-open -- never affects the handler.
+        if checkin_status != "disabled":
+            try:
+                post_to_platform(
+                    "/legacy/checkin", build_checkin_payload(event, checkin_status)
+                )
+            except Exception as bridge_error:  # noqa: BLE001 -- belt-and-braces
+                logging.warning("Platform bridge hook failed: %s", bridge_error)
     except Exception as e:
         logging.exception(e)
         discord.exception_alert(ALERT_WEBHOOK, context)

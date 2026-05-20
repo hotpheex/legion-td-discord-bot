@@ -3,3 +3,5 @@ __pycache__
 .pytest_cache
 build/
 scripts/creds.sh
+.venv/
+venv/

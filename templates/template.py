@@ -72,6 +72,29 @@ def sceptre_handler(sceptre_user_data):
         )
     )
 
+    # Parallel-run bridge to the new tournament platform (issue #118).
+    # An empty PlatformBaseUrl disables the bridge -- the notifier no-ops.
+    platform_base_url = template.add_parameter(
+        Parameter(
+            "PlatformBaseUrl",
+            Description="Base URL of the new tournament platform API "
+            "(parallel-run bridge). Empty disables the bridge.",
+            Type="String",
+            Default="",
+        )
+    )
+
+    legacy_bridge_secret = template.add_parameter(
+        Parameter(
+            "LegacyBridgeSecret",
+            Description="Shared secret for the platform's /legacy/* bridge "
+            "endpoints; sent in the x-legacy-bridge-secret header.",
+            Type="String",
+            Default="",
+            NoEcho=True,
+        )
+    )
+
     # Resources
     checkin_status_param = template.add_resource(
         ssm.Parameter(
@@ -95,6 +118,8 @@ def sceptre_handler(sceptre_user_data):
             "GOOGLE_SHEET_ID": Ref(google_sheet_id),
             "CHECKIN_STATUS_PARAM": Ref(checkin_status_param),
             "ALERT_WEBHOOK": Ref(alert_webhook),
+            "PLATFORM_BASE_URL": Ref(platform_base_url),
+            "LEGACY_BRIDGE_SECRET": Ref(legacy_bridge_secret),
         },
         iam_permissions=[
             {
@@ -121,6 +146,8 @@ def sceptre_handler(sceptre_user_data):
             "GOOGLE_SHEET_ID": Ref(google_sheet_id),
             "CHALLONGE_API_KEY": Ref(challonge_api_key),
             "ALERT_WEBHOOK": Ref(alert_webhook),
+            "PLATFORM_BASE_URL": Ref(platform_base_url),
+            "LEGACY_BRIDGE_SECRET": Ref(legacy_bridge_secret),
         },
         iam_permissions=[],
     )
@@ -138,6 +165,8 @@ def sceptre_handler(sceptre_user_data):
             "GOOGLE_API_KEY": Ref(google_api_key),
             "GOOGLE_SHEET_ID": Ref(google_sheet_id),
             "ALERT_WEBHOOK": Ref(alert_webhook),
+            "PLATFORM_BASE_URL": Ref(platform_base_url),
+            "LEGACY_BRIDGE_SECRET": Ref(legacy_bridge_secret),
         },
         iam_permissions=[
             {

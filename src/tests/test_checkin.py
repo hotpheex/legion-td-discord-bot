@@ -10,8 +10,6 @@ class the handler imports -- no test touches a real spreadsheet or network.
 """
 from unittest.mock import MagicMock, patch
 
-import pytest
-
 from checkin import main
 
 

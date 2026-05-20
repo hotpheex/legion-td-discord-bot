@@ -68,6 +68,12 @@ def post_to_platform(path, payload):
         logging.debug("Platform bridge not configured; skipping %s", path)
         return False
 
+    if not path:
+        # Defensive: a caller passing an empty path would otherwise POST to
+        # the base URL itself. No legitimate call site does this.
+        logging.warning("Platform bridge called with empty path; skipping")
+        return False
+
     url = f"{base_url.rstrip('/')}/{path.lstrip('/')}"
 
     try:

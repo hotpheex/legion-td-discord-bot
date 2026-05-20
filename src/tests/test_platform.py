@@ -139,6 +139,18 @@ def test_post_to_platform_skips_when_unconfigured(monkeypatch):
     mock_post.assert_not_called()
 
 
+def test_post_to_platform_skips_on_empty_path(monkeypatch):
+    """An empty path would otherwise POST to the base URL itself -- skip."""
+    monkeypatch.setenv("PLATFORM_BASE_URL", "https://platform.example/")
+    monkeypatch.setenv("LEGACY_BRIDGE_SECRET", "shh")
+
+    with patch("libs.platform.requests.post") as mock_post:
+        result = platform.post_to_platform("", {"team_name": "Rocket"})
+
+    assert result is False
+    mock_post.assert_not_called()
+
+
 @patch("libs.platform.requests.post")
 def test_post_to_platform_logs_but_does_not_raise_on_failure(mock_post, caplog):
     mock_post.side_effect = requests.exceptions.Timeout("timed out")

@@ -9,6 +9,7 @@ imports -- no test touches a real Challonge API or the network. The handler
 caches participants under `/tmp/{tournament_id}.json`; each test uses a
 unique tournament id and cleans the file up so runs are independent.
 """
+import glob
 import os
 import uuid
 from unittest.mock import MagicMock, patch
@@ -26,7 +27,9 @@ def tournament_id():
     """A unique id per test so the /tmp participant cache never collides."""
     tid = f"test-{uuid.uuid4().hex}"
     yield tid
-    for path in (f"/tmp/{tid}.json",):
+    # Final cache file plus any intermediate `{tid}-{aws_request_id}.json`
+    # leaked by a mid-write failure.
+    for path in [f"/tmp/{tid}.json", *glob.glob(f"/tmp/{tid}-*.json")]:
         if os.path.exists(path):
             os.remove(path)
 

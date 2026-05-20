@@ -26,8 +26,10 @@ def generate_checkins(num_teams, num_solos):
 
     `generate_divisions` only branches on *counts* and relative rating order,
     so the random ratings here do not affect the division *sizes* that the
-    characterization assertions below pin.
+    characterization assertions below pin. A fixed seed keeps the generated
+    ratings reproducible so any future failure can be replayed.
     """
+    random.seed(0)
     teams = []
     for i in range(num_teams):
         teams.append(
